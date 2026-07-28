@@ -1,0 +1,29 @@
+<mat-card class="xros-card kpi-card">
+  <div class="kpi-header">
+    <div class="kpi-header-left">
+      <mat-icon class="kpi-icon">{{ icon }}</mat-icon>
+      <span class="kpi-label">{{ label }}</span>
+    </div>
+    <span class="kpi-date">{{ date }}</span>
+  </div>
+
+  <div class="kpi-value">{{ metric?.value | number }}</div>
+  <div class="kpi-description" *ngIf="description">{{ description }}</div>
+
+  <div class="kpi-comparisons">
+    <div class="comparison-cell" *ngFor="let c of comparisons">
+      <span class="comparison-label">{{ c.label }}</span>
+      <div class="comparison-bottom">
+        <span class="comparison-value">{{ c.value | number }}</span>
+        <span
+          class="delta-pill"
+          [class.delta-positive]="c.changePct >= 0"
+          [class.delta-negative]="c.changePct < 0"
+        >
+          <mat-icon class="change-arrow">{{ c.changePct >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct }}%
+        </span>
+      </div>
+    </div>
+  </div>
+</mat-card>

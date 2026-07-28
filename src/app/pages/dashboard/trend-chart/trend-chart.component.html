@@ -1,0 +1,23 @@
+<div class="trend-block">
+  <div class="trend-header">
+    <div class="page-section-title">Traffic Trend</div>
+    <div class="series-toggles">
+      <mat-checkbox
+        *ngFor="let s of seriesMeta"
+        [checked]="seriesVisibility[s.key]"
+        (change)="toggleSeries(s.key)"
+        color="primary"
+      >
+        <span class="toggle-dot" [style.background]="s.color"></span>
+        {{ s.label }}
+      </mat-checkbox>
+    </div>
+  </div>
+  <highcharts-chart
+    [Highcharts]="Highcharts"
+    [options]="chartOptions"
+    [oneToOne]="true"
+    (chartInstance)="onChartInstance($event)"
+    style="display: block; width: 100%; height: 260px"
+  ></highcharts-chart>
+</div>

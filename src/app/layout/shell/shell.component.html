@@ -1,0 +1,83 @@
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <mat-icon class="brand-icon">insights</mat-icon>
+      <div>
+        <div class="brand-name">Xpandretail</div>
+        <div class="brand-powered">powered by <strong>S&agrave;vant</strong></div>
+      </div>
+    </div>
+
+    <div class="brand-heading">XR Operating System&trade;</div>
+
+    <mat-nav-list class="nav-list">
+      <a
+        mat-list-item
+        *ngFor="let item of primaryNav"
+        [routerLink]="item.route"
+        routerLinkActive="active-link"
+        class="nav-chip"
+      >
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+
+      <a
+        mat-list-item
+        *ngFor="let item of secondaryNav"
+        [routerLink]="item.route"
+        routerLinkActive="active-link"
+        class="nav-chip"
+      >
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+
+      <div class="section-label">ADMINISTRATION</div>
+      <a
+        mat-list-item
+        *ngFor="let item of adminNavA"
+        [routerLink]="item.route"
+        routerLinkActive="active-link"
+        class="nav-chip"
+      >
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+
+      <div class="section-label">ADMINISTRATION</div>
+      <a
+        mat-list-item
+        *ngFor="let item of adminNavB"
+        [routerLink]="item.route"
+        routerLinkActive="active-link"
+        class="nav-chip"
+      >
+        <span matListItemTitle>{{ item.label }}</span>
+      </a>
+    </mat-nav-list>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-name">{{ currentUser?.name || currentUser?.email || 'User' }}</div>
+        <div class="user-role">{{ currentUser?.role || 'Member' }}</div>
+        <div class="user-org">Enterprise &middot; XR Retail Group</div>
+      </div>
+      <button mat-flat-button class="sign-out-btn" (click)="signOut()">Sign Out</button>
+    </div>
+  </aside>
+
+  <div class="content-area">
+    <header class="breadcrumb-bar">
+      <div class="breadcrumb">
+        <span>XR OPERATING SYSTEM&trade;</span>
+        <mat-icon class="crumb-sep">chevron_right</mat-icon>
+        <span>{{ storeName }}</span>
+        <mat-icon class="crumb-sep">chevron_right</mat-icon>
+        <span>PLATFORM ADMIN</span>
+      </div>
+      <h1 class="page-title">{{ pageTitle }}</h1>
+    </header>
+
+    <main class="page-content">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

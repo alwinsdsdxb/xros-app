@@ -1,0 +1,57 @@
+<mat-card class="xros-card dwell-card">
+  <span class="section-tag">DWELL</span>
+  <div class="page-section-title">Dwell Time Analysis</div>
+
+  <div class="dwell-tiles">
+    <div class="dwell-tile" *ngFor="let t of tiles">
+      <div class="tile-label">{{ t.label }}</div>
+      <div class="tile-value">{{ t.value }}</div>
+      <div class="tile-compare">
+        <span
+          class="delta-pill"
+          [class.delta-positive]="t.changePct >= 0"
+          [class.delta-negative]="t.changePct < 0"
+        >
+          {{ t.changePct >= 0 ? '+' : '' }}{{ t.changePct }}%
+        </span>
+        <span class="tile-prev">vs {{ t.previousDay }} prev day</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="distribution-block">
+    <div class="demo-block-title">Dwell Time Distribution</div>
+    <highcharts-chart
+      [Highcharts]="Highcharts"
+      [options]="distributionChartOptions"
+      [oneToOne]="true"
+      style="display: block; width: 100%; height: 220px"
+    ></highcharts-chart>
+  </div>
+
+  <div class="dwell-charts">
+    <div class="dwell-chart-block">
+      <div class="demo-block-title">Engagement Composition</div>
+      <highcharts-chart
+        [Highcharts]="Highcharts"
+        [options]="engagementChartOptions"
+        [oneToOne]="true"
+        style="display: block; width: 100%; height: 220px"
+      ></highcharts-chart>
+      <div class="engagement-legend">
+        <span class="legend-chip" *ngFor="let l of engagementLegend">
+          <span class="dot" [style.background]="l.color"></span>{{ l.label }}
+        </span>
+      </div>
+    </div>
+    <div class="dwell-chart-block">
+      <div class="demo-block-title">Average Dwell Trend</div>
+      <highcharts-chart
+        [Highcharts]="Highcharts"
+        [options]="trendChartOptions"
+        [oneToOne]="true"
+        style="display: block; width: 100%; height: 260px"
+      ></highcharts-chart>
+    </div>
+  </div>
+</mat-card>

@@ -1,0 +1,37 @@
+<mat-card class="xros-card operations-card">
+  <span class="section-tag">OPERATIONS</span>
+  <div class="page-section-title">Store Operations</div>
+  <div class="ops-grid" *ngIf="operations as o">
+    <div class="ops-tile">
+      <mat-icon class="ops-icon">thermostat</mat-icon>
+      <div>
+        <div class="ops-value">{{ o.temperatureC }}&deg;C</div>
+        <div class="ops-sub">Feels like {{ o.feelsLikeC }}&deg;C &middot; {{ o.location }}</div>
+      </div>
+    </div>
+
+    <div class="ops-tile">
+      <mat-icon class="ops-icon">groups</mat-icon>
+      <div>
+        <div class="ops-value">{{ o.liveOccupancy | number }}</div>
+        <div class="ops-sub">Live occupancy &middot; updated {{ o.occupancyUpdatedMinsAgo }} min ago</div>
+      </div>
+    </div>
+
+    <div class="ops-tile">
+      <mat-icon class="ops-icon icon-good">wifi</mat-icon>
+      <div>
+        <div class="ops-value">{{ o.devicesOnline }}</div>
+        <div class="ops-sub">Devices online</div>
+      </div>
+    </div>
+
+    <div class="ops-tile">
+      <mat-icon class="ops-icon icon-bad">wifi_off</mat-icon>
+      <div>
+        <div class="ops-value">{{ o.devicesOfflineCount }}</div>
+        <div class="ops-sub">Devices offline &middot; {{ o.devicesOfflineNote }}</div>
+      </div>
+    </div>
+  </div>
+</mat-card>

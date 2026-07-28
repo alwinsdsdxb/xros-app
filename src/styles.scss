@@ -1,0 +1,151 @@
+/* Global styles */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  background: #f4f6f9;
+  color: #14213d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.mat-typography h1,
+.mat-typography h2,
+.mat-typography h3,
+.mat-typography h4,
+.mat-typography h5,
+.mat-typography h6,
+.mat-typography p {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+}
+
+.mat-typography,
+.mat-mdc-form-field,
+.mat-mdc-select,
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button,
+.mat-mdc-card,
+.mat-mdc-checkbox,
+.mat-mdc-list-item,
+input,
+button {
+  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
+}
+
+:root {
+  /* Brand */
+  --navy: #173a56;
+  --navy-dark: #102943;
+  --navy-tint: rgba(23, 58, 86, 0.08);
+
+  /* Data-viz / funnel palette (categorical, fixed order) */
+  --series-1: #2f6fa7; /* blue */
+  --series-2: #e2703a; /* orange */
+  --series-3: #a7b62e; /* olive */
+  --series-4: #e3a73c; /* gold */
+  --series-5: #1e8a7c; /* teal */
+  --series-6: #7b5ea7; /* purple */
+  --series-7: #414f6b; /* slate navy */
+  --series-8: #d64545; /* red */
+
+  --chart-surface: #ffffff;
+  --page-plane: #f4f6f9;
+  --ink-primary: #14213d;
+  --ink-secondary: #5b6472;
+  --ink-muted: #8b93a1;
+  --gridline: #e7eaf0;
+  --axis: #c7cdd8;
+  --delta-good: #1e8a57;
+  --delta-good-bg: #e4f5ea;
+  --delta-bad: #d64545;
+  --delta-bad-bg: #fce9e9;
+  --border-hairline: #e7eaf0;
+}
+
+.xros-card {
+  border-radius: 16px !important;
+  border: 1px solid #dde2ea;
+  box-shadow:
+    0 6px 16px rgba(20, 33, 61, 0.09),
+    0 1px 3px rgba(20, 33, 61, 0.08) !important;
+}
+
+.delta-positive {
+  color: var(--delta-good);
+  font-weight: 600;
+}
+
+.delta-negative {
+  color: var(--delta-bad);
+  font-weight: 600;
+}
+
+.delta-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.delta-pill.delta-positive {
+  background: var(--delta-good-bg);
+  color: var(--delta-good);
+}
+
+.delta-pill.delta-negative {
+  background: var(--delta-bad-bg);
+  color: var(--delta-bad);
+}
+
+.mat-mdc-card.xros-card {
+  padding: 22px 24px;
+}
+
+.page-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 14px 0;
+}
+
+/* Nudge Material's default indigo accents toward the navy brand color */
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-focus-outline-color: var(--navy);
+  --mdc-outlined-text-field-focus-label-text-color: var(--navy);
+  --mat-select-focused-arrow-color: var(--navy);
+}
+
+.mat-mdc-checkbox {
+  --mdc-checkbox-selected-icon-color: var(--navy);
+  --mdc-checkbox-selected-focus-icon-color: var(--navy);
+  --mdc-checkbox-selected-hover-icon-color: var(--navy);
+  --mdc-checkbox-selected-pressed-icon-color: var(--navy);
+}
+
+.mat-datepicker-toggle-active {
+  color: var(--navy) !important;
+}
+
+.section-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-secondary);
+  background: var(--page-plane);
+  border: 1px solid var(--border-hairline);
+  border-radius: 6px;
+  padding: 4px 10px;
+  margin-bottom: 14px;
+}

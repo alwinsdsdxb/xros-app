@@ -1,0 +1,87 @@
+<div class="dashboard-page">
+  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field scope-field">
+      <mat-label>Scope</mat-label>
+      <mat-select formControlName="scope">
+        <mat-option *ngFor="let s of scopes" [value]="s.value">{{ s.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <mat-button-toggle-group formControlName="view" class="view-toggle">
+      <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field date-field">
+      <mat-label>Date</mat-label>
+      <input matInput [matDatepicker]="picker" formControlName="date" />
+      <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">
+      Apply
+    </button>
+  </mat-card>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading dashboard data...</span>
+  </div>
+
+  <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="data as d">
+    <div class="dashboard-tag-row">
+      <span class="section-tag">DASHBOARD</span>
+      <div class="dashboard-date-badge">
+        <div class="badge-date">{{ displayDate }}</div>
+        <div class="badge-sub" *ngIf="d.storesCombined as n">{{ n }} stores combined</div>
+      </div>
+    </div>
+
+    <div class="kpi-funnel-row">
+      <div class="kpi-col">
+        <div class="kpi-row">
+          <app-kpi-card
+            label="Passer By"
+            icon="directions_walk"
+            description="Consolidated storefront traffic"
+            [date]="displayDate"
+            [metric]="d.kpis.passerBy"
+          ></app-kpi-card>
+          <app-kpi-card
+            label="Total Footfall"
+            icon="groups"
+            description="Sensor traffic count"
+            [date]="displayDate"
+            [metric]="d.kpis.totalFootfall"
+          ></app-kpi-card>
+          <app-kpi-card
+            label="Unique Footfall"
+            icon="person_pin_circle"
+            description="Deduplicated visitors"
+            [date]="displayDate"
+            [metric]="d.kpis.uniqueFootfall"
+          ></app-kpi-card>
+          <app-kpi-card
+            label="Groups"
+            icon="group"
+            description="Consolidated grouped visits"
+            [date]="displayDate"
+            [metric]="d.kpis.groups"
+          ></app-kpi-card>
+        </div>
+      </div>
+
+      <div class="funnel-col">
+        <app-flow-funnel-chart [funnel]="d.flowFunnel"></app-flow-funnel-chart>
+      </div>
+    </div>
+
+    <app-demographics-panel [demographics]="d.demographics" [trend]="d.trend"></app-demographics-panel>
+
+    <app-dwell-panel [dwell]="d.dwell"></app-dwell-panel>
+
+    <app-operations-panel [operations]="d.operations"></app-operations-panel>
+  </ng-container>
+</div>

@@ -1,0 +1,156 @@
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-bottom: 32px;
+}
+
+.filter-bar {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding: 14px 20px !important;
+}
+
+.filter-field {
+  min-width: 150px;
+  flex: 0 1 190px;
+}
+
+.scope-field {
+  flex-basis: 170px;
+}
+
+.date-field {
+  min-width: 130px;
+  flex: 0 1 150px;
+}
+
+.view-toggle {
+  flex: none;
+}
+
+.apply-btn {
+  flex: none;
+  margin-left: auto;
+}
+
+.apply-btn {
+  height: 40px;
+  background: var(--navy) !important;
+  color: #ffffff !important;
+}
+
+::ng-deep .view-toggle.mat-button-toggle-group {
+  border-radius: 8px;
+  border: 1px solid var(--gridline);
+  height: 40px;
+  overflow: hidden;
+}
+
+::ng-deep .view-toggle .mat-button-toggle {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+
+::ng-deep .view-toggle .mat-button-toggle-label-content {
+  line-height: 38px;
+  padding: 0 14px;
+}
+
+::ng-deep .view-toggle .mat-button-toggle-checked {
+  background: var(--navy);
+  color: #ffffff;
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-secondary, #52514e);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.error-row {
+  color: var(--delta-bad, #d03b3b);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+.dashboard-tag-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.dashboard-tag-row .section-tag {
+  margin-bottom: 0;
+}
+
+.dashboard-date-badge {
+  background: #ffffff;
+  border: 1px solid #dde2ea;
+  border-radius: 10px;
+  padding: 8px 14px;
+  text-align: right;
+  box-shadow:
+    0 6px 16px rgba(20, 33, 61, 0.09),
+    0 1px 3px rgba(20, 33, 61, 0.08);
+}
+
+.badge-date {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.badge-sub {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.kpi-funnel-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: stretch;
+}
+
+.kpi-col,
+.funnel-col {
+  display: flex;
+  min-width: 0;
+}
+
+.funnel-col app-flow-funnel-chart {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.funnel-col ::ng-deep .funnel-card {
+  width: 100%;
+}
+
+@media (max-width: 1100px) {
+  .kpi-funnel-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+}
+
+@media (max-width: 640px) {
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+}

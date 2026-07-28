@@ -1,0 +1,32 @@
+.coming-soon-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+}
+
+.coming-soon-card {
+  text-align: center;
+  padding: 48px !important;
+  color: var(--ink-secondary, #52514e);
+}
+
+.coming-soon-icon {
+  font-size: 40px;
+  height: 40px;
+  width: 40px;
+  color: var(--ink-muted, #898781);
+  margin-bottom: 12px;
+}
+
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink-primary, #0b0b0b);
+  margin: 0 0 8px 0;
+}
+
+p {
+  margin: 0;
+  font-size: 14px;
+}

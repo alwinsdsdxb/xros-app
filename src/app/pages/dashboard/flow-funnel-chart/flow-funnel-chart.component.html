@@ -1,0 +1,16 @@
+<mat-card class="xros-card funnel-card">
+  <span class="section-tag">FLOW FUNNEL</span>
+  <div class="page-section-title">Visitor to sales and loyalty flow</div>
+
+  <div class="funnel-stack">
+    <div
+      class="funnel-bar"
+      *ngFor="let s of stages"
+      [style.width.%]="s.widthPct"
+      [style.background]="s.color"
+    >
+      <span class="bar-label">{{ s.label }}: {{ s.value | number }}</span>
+      <span class="bar-sub" *ngIf="s.sub">{{ s.sub }}</span>
+    </div>
+  </div>
+</mat-card>

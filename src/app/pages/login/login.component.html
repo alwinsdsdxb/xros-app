@@ -1,0 +1,96 @@
+<div class="login-page">
+  <div class="brand-panel">
+    <span class="section-tag">RETAIL ANALYTICS PLATFORM</span>
+
+    <div class="brand-logo">
+      <mat-icon class="brand-icon">insights</mat-icon>
+      <div>
+        <div class="brand-name">Xpandretail</div>
+        <div class="brand-sub">XR Operating System&trade;</div>
+      </div>
+    </div>
+
+    <h1 class="brand-headline">XR Operating<br />System</h1>
+
+    <p class="brand-desc">
+      Footfall-led retail analytics for store operations, marketing, and workforce teams.
+    </p>
+
+    <ul class="brand-points">
+      <li>Real-time passer-by, footfall, and conversion funnels</li>
+      <li>Multi-store comparisons with historical trend data</li>
+      <li>Role-based dashboards built for operations admins</li>
+    </ul>
+
+    <div class="brand-blob"></div>
+  </div>
+
+  <div class="form-panel">
+    <div class="toast-message" *ngIf="toastMessage">{{ toastMessage }}</div>
+
+    <mat-card class="login-card xros-card">
+      <span class="section-tag">PLATFORM ACCESS</span>
+      <h2 class="login-title">Sign in to the analytics workspace</h2>
+      <p class="login-subtitle">Use your operations admin credentials to continue.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()">
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Email</mat-label>
+          <input
+            matInput
+            type="email"
+            formControlName="email"
+            [placeholder]="demoEmail"
+            autocomplete="username"
+          />
+          <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
+          <mat-error *ngIf="form.get('email')?.hasError('email')">Enter a valid email</mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="full-width">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            [type]="hidePassword ? 'password' : 'text'"
+            formControlName="password"
+            [placeholder]="demoPassword"
+            autocomplete="current-password"
+          />
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Toggle password visibility'"
+          >
+            <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
+          </button>
+          <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
+        </mat-form-field>
+
+        <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <button
+          mat-flat-button
+          type="submit"
+          class="full-width submit-btn"
+          [disabled]="loading"
+        >
+          <mat-icon *ngIf="loading" class="spin">autorenew</mat-icon>
+          <span *ngIf="!loading">Sign In</span>
+          <span *ngIf="loading">Signing in...</span>
+        </button>
+
+        <button mat-stroked-button type="button" class="full-width forgot-btn" (click)="forgotPassword()">
+          Forgot password?
+        </button>
+
+        <div class="info-message" *ngIf="infoMessage">{{ infoMessage }}</div>
+      </form>
+
+      <div class="demo-hint">
+        Demo credentials &mdash; <strong>{{ demoEmail }}</strong> / <strong>{{ demoPassword }}</strong>
+      </div>
+    </mat-card>
+  </div>
+</div>
