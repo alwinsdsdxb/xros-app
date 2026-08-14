@@ -1,0 +1,159 @@
+<div class="instore-page">
+  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+    <div class="filter-box" *ngIf="dashboards.length > 1">
+      <span class="filter-caption">Dashboard</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
+        <mat-select [value]="dashboardId" (selectionChange)="dashboardChange.emit($event.value)">
+          <mat-option *ngFor="let d of dashboards" [value]="d._id">{{ d.dashboardName }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Store</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
+        <mat-select formControlName="store">
+          <mat-option value="all">All Stores</mat-option>
+          <mat-option *ngFor="let s of storeOptions" [value]="s.value">{{ s.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">View</span>
+      <mat-button-toggle-group formControlName="view" class="view-toggle">
+        <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Date Range</span>
+      <button type="button" class="date-range-btn" (click)="picker.open()">
+        <span class="date-range-main">{{
+          filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
+        }}</span>
+        <span class="date-range-sub">{{ filterForm.value.view }}</span>
+        <mat-icon class="date-range-icon">calendar_today</mat-icon>
+      </button>
+      <input
+        class="date-range-input"
+        matInput
+        [matDatepicker]="picker"
+        formControlName="date"
+      />
+      <mat-datepicker
+        #picker
+        [startView]="usesMonthPicker ? 'year' : 'month'"
+        (monthSelected)="onMonthSelected($event, picker)"
+      ></mat-datepicker>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Hours</span>
+      <mat-button-toggle-group formControlName="operationalHours" class="hours-toggle">
+        <mat-button-toggle *ngFor="let h of hoursOptions" [value]="h.value">{{ h.label }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">
+      Apply
+    </button>
+  </mat-card>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading instore analytics...</span>
+  </div>
+
+  <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <app-active-campaigns-panel
+    [campaigns]="campaignsForPanel"
+    [rangeFrom]="campaignsRangeFrom"
+    [rangeTo]="campaignsRangeTo"
+  ></app-active-campaigns-panel>
+
+  <div class="instore-analysis-container">
+    <div class="kpi-strip-block" *ngIf="kpisForPanel as k">
+      <span class="section-tag">INSTORE ANALYTICS</span>
+      <div class="kpi-strip-row">
+        <mat-card class="xros-card kpi-strip-tile">
+          <div class="stat-label">Avg Daily Footfall</div>
+          <div class="stat-value">{{ k.avgDailyFootfall.value | number }}</div>
+          <div class="stat-sub">{{ k.avgDailyFootfall.sub }}</div>
+        </mat-card>
+        <mat-card class="xros-card kpi-strip-tile">
+          <div class="stat-label">Unique Visitors</div>
+          <div class="stat-value">{{ k.uniqueVisitors.value | number }}</div>
+          <div class="stat-sub">{{ k.uniqueVisitors.sub }}</div>
+        </mat-card>
+        <mat-card class="xros-card kpi-strip-tile">
+          <div class="stat-label">Peak Hour</div>
+          <div class="stat-value">{{ k.peakHour.value }}</div>
+          <div class="stat-sub">{{ k.peakHour.sub }}</div>
+        </mat-card>
+        <mat-card class="xros-card kpi-strip-tile">
+          <div class="stat-label">Weekend Avg</div>
+          <div class="stat-value">{{ k.weekendAvg.value | number }}</div>
+          <div class="stat-sub">{{ k.weekendAvg.sub }}</div>
+        </mat-card>
+      </div>
+    </div>
+
+    <app-peak-hours-panel [peakHours]="peakHoursForPanel"></app-peak-hours-panel>
+
+    <app-floor-plan-panel [data]="floorPlanForPanel"></app-floor-plan-panel>
+
+    <app-zone-table-panel [zones]="zonesForPanel" [highlights]="zoneHighlightsForPanel"></app-zone-table-panel>
+
+    <app-zone-correlation-panel [correlation]="zoneCorrelationForPanel" [zones]="zonesForPanel"></app-zone-correlation-panel>
+
+    <app-trial-rooms-panel [proxy]="trialRoomProxyForPanel"></app-trial-rooms-panel>
+
+    <div class="bottom-row" *ngIf="audienceMixForPanel as a">
+      <mat-card class="xros-card">
+        <div class="page-section-title">Audience Mix</div>
+        <div class="bottom-list">
+          <div class="bottom-row-item">
+            <span>Male</span>
+            <span class="bottom-value">{{ a.male | number }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Female</span>
+            <span class="bottom-value">{{ a.female | number }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Adult</span>
+            <span class="bottom-value">{{ a.adult | number }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Child</span>
+            <span class="bottom-value">{{ a.child | number }}</span>
+          </div>
+        </div>
+      </mat-card>
+
+      <mat-card class="xros-card" *ngIf="trafficSignalsForPanel as t">
+        <div class="page-section-title">Traffic Signals</div>
+        <div class="bottom-list">
+          <div class="bottom-row-item">
+            <span>Peak Days</span>
+            <span class="bottom-value">{{ t.peakDays }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Normal Days</span>
+            <span class="bottom-value">{{ t.normalDays }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Low Days</span>
+            <span class="bottom-value">{{ t.lowDays }}</span>
+          </div>
+          <div class="bottom-row-item">
+            <span>Busiest Day</span>
+            <span class="bottom-value">{{ t.busiestDay }}</span>
+          </div>
+        </div>
+      </mat-card>
+    </div>
+  </div>
+</div>

@@ -17,12 +17,13 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, password: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, { email, password }).pipe(
+  login(email: string, password: string, rememberMe = false): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/login`, { email, password, rememberMe }).pipe(
       tap((res) => {
-        if (res?.accessToken) {
-          localStorage.setItem(TOKEN_KEY, res.accessToken);
-          const user = res.user ?? this.decodeUserFromToken(res.accessToken);
+        const token = res?.data?.token;
+        if (token) {
+          localStorage.setItem(TOKEN_KEY, token);
+          const user = this.decodeUserFromToken(token);
           if (user) {
             localStorage.setItem(USER_KEY, JSON.stringify(user));
           }
@@ -66,9 +67,14 @@ export class AuthService {
     try {
       const decoded = jwtDecode<Record<string, unknown>>(token);
       return {
+        id: decoded['userId'] as string | undefined,
         email: (decoded['email'] as string) ?? '',
         name: (decoded['name'] as string) ?? (decoded['email'] as string) ?? 'User',
-        role: (decoded['role'] as string) ?? 'User'
+        role: (decoded['roleId'] as string) ?? 'User',
+        company: decoded['company'] as string | undefined,
+        tenantId: decoded['tenantId'] as string | undefined,
+        accountType: decoded['accountType'] as string | undefined,
+        defaultDashboard: decoded['defaultDashboard'] as string | undefined
       };
     } catch {
       return null;

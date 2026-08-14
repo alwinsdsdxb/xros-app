@@ -3,34 +3,52 @@
   <div class="page-section-title">Store Operations</div>
   <div class="ops-grid" *ngIf="operations as o">
     <div class="ops-tile">
-      <mat-icon class="ops-icon">thermostat</mat-icon>
-      <div>
+      <span class="ops-icon-badge"><mat-icon class="ops-icon">thermostat</mat-icon></span>
+      <div *ngIf="o.temperatureC !== undefined; else opsNoTemp">
+        <div class="ops-label">Temperature</div>
         <div class="ops-value">{{ o.temperatureC }}&deg;C</div>
-        <div class="ops-sub">Feels like {{ o.feelsLikeC }}&deg;C &middot; {{ o.location }}</div>
+        <div class="ops-sub">{{ o.weatherCondition }}<ng-container *ngIf="o.weatherCondition && o.location"> &middot; </ng-container>{{ o.location }}</div>
       </div>
+      <ng-template #opsNoTemp>
+        <div>
+          <div class="ops-label">Temperature</div>
+          <div class="ops-value ops-value-muted">&mdash;</div>
+          <div class="ops-sub">No data yet</div>
+        </div>
+      </ng-template>
     </div>
 
     <div class="ops-tile">
-      <mat-icon class="ops-icon">groups</mat-icon>
-      <div>
+      <span class="ops-icon-badge"><mat-icon class="ops-icon">groups</mat-icon></span>
+      <div *ngIf="o.liveOccupancy !== undefined; else opsNoOccupancy">
+        <div class="ops-label">Live Occupancy</div>
         <div class="ops-value">{{ o.liveOccupancy | number }}</div>
-        <div class="ops-sub">Live occupancy &middot; updated {{ o.occupancyUpdatedMinsAgo }} min ago</div>
+        <div class="ops-sub">Updated {{ o.occupancyUpdatedMinsAgo }} min ago</div>
       </div>
+      <ng-template #opsNoOccupancy>
+        <div>
+          <div class="ops-label">Live Occupancy</div>
+          <div class="ops-value ops-value-muted">&mdash;</div>
+          <div class="ops-sub">No data yet</div>
+        </div>
+      </ng-template>
     </div>
 
     <div class="ops-tile">
-      <mat-icon class="ops-icon icon-good">wifi</mat-icon>
+      <span class="ops-icon-badge ops-icon-badge-good"><mat-icon class="ops-icon icon-good">wifi</mat-icon></span>
       <div>
+        <div class="ops-label">Devices Online</div>
         <div class="ops-value">{{ o.devicesOnline }}</div>
-        <div class="ops-sub">Devices online</div>
+        <div class="ops-sub">Active capture devices</div>
       </div>
     </div>
 
     <div class="ops-tile">
-      <mat-icon class="ops-icon icon-bad">wifi_off</mat-icon>
+      <span class="ops-icon-badge ops-icon-badge-bad"><mat-icon class="ops-icon icon-bad">wifi_off</mat-icon></span>
       <div>
+        <div class="ops-label">Devices Offline</div>
         <div class="ops-value">{{ o.devicesOfflineCount }}</div>
-        <div class="ops-sub">Devices offline &middot; {{ o.devicesOfflineNote }}</div>
+        <div class="ops-sub">{{ o.devicesOfflineCount > 0 ? 'Needs field check' : 'All devices reporting' }}</div>
       </div>
     </div>
   </div>

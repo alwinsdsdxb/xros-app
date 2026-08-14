@@ -1,0 +1,29 @@
+<mat-card class="xros-card floor-plan-card">
+  <span class="section-tag">FLOOR PLAN REPORT</span>
+  <div class="page-section-title">Zone Heat &amp; Flow Analysis</div>
+  <p class="panel-subtitle">
+    Zone overlays summarize traffic, visitor capture, dwell, and audience mix per area of the store.
+  </p>
+
+  <div class="floor-plan-body">
+    <div class="floor-plan-canvas-wrap">
+      <canvas #canvas></canvas>
+      <div #tooltip class="floor-plan-tooltip"></div>
+      <div class="floor-plan-placeholder" *ngIf="!data?.image">No floor plan data available.</div>
+    </div>
+
+    <div class="floor-plan-legend" *ngIf="legend.length">
+      <div class="legend-title">Zones</div>
+      <div
+        class="legend-row"
+        *ngFor="let item of legend"
+        [class.active]="highlightedZone === item.zone.zoneName"
+        (mouseenter)="setHighlight(item.zone.zoneName)"
+        (mouseleave)="setHighlight(null)"
+      >
+        <span class="legend-swatch" [style.background]="item.fill"></span>
+        <span class="legend-name">{{ item.zone.zoneName }}</span>
+      </div>
+    </div>
+  </div>
+</mat-card>

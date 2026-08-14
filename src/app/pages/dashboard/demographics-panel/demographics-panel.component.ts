@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import * as Highcharts from 'highcharts';
-import { Demographics, TrendPoint } from '../../../core/models/dashboard.model';
+import { Demographics } from '../../../core/models/dashboard.model';
 
 interface GroupSizeRow {
   label: string;
@@ -23,7 +23,6 @@ interface AgeStat {
 })
 export class DemographicsPanelComponent implements OnChanges {
   @Input() demographics: Demographics | null = null;
-  @Input() trend: TrendPoint[] = [];
 
   Highcharts: typeof Highcharts = Highcharts;
   genderChartOptions: Highcharts.Options = {};
@@ -53,20 +52,34 @@ export class DemographicsPanelComponent implements OnChanges {
     const g = this.demographics?.gender;
 
     this.genderChartOptions = {
-      chart: { type: 'pie', backgroundColor: 'transparent', height: 220 },
+      chart: { type: 'pie', backgroundColor: 'transparent', height: 220, spacing: [6, 6, 6, 6] },
       title: {
-        text: g ? `${(g.male + g.female).toLocaleString()}<br/><span style="font-size:11px;font-weight:400">Visitors</span>` : '',
+        text: g
+          ? `<span style="font-size:24px;font-weight:600;color:#263238">${(g.male + g.female).toLocaleString()}</span><br/><span style="font-size:10.5px;font-weight:600;color:#78909c;letter-spacing:0.04em">VISITORS</span>`
+          : '',
         align: 'center',
         verticalAlign: 'middle',
-        y: 4,
-        style: { color: '#14213d', fontSize: '20px', fontWeight: '800' }
+        y: 6,
+        style: { color: '#263238' }
       },
       credits: { enabled: false },
-      tooltip: { pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)' },
+      tooltip: {
+        pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)',
+        backgroundColor: '#ffffff',
+        borderColor: '#e6eaec',
+        borderRadius: 8,
+        shadow: true
+      },
       plotOptions: {
         pie: {
-          innerSize: '72%',
-          dataLabels: { enabled: false }
+          innerSize: '74%',
+          borderRadius: 4,
+          borderWidth: 3,
+          borderColor: '#ffffff',
+          dataLabels: { enabled: false },
+          states: {
+            hover: { brightness: 0.05, halo: { size: 4 } }
+          }
         }
       },
       legend: { enabled: false },
@@ -102,13 +115,13 @@ export class DemographicsPanelComponent implements OnChanges {
       credits: { enabled: false },
       xAxis: {
         categories: groups.map((g) => g.label),
-        lineColor: '#c7cdd8',
-        labels: { style: { color: '#5b6472', fontSize: '11px' } }
+        lineColor: '#b3c0c6',
+        labels: { style: { color: '#546e7a', fontSize: '11px' } }
       },
       yAxis: {
         title: { text: undefined },
-        gridLineColor: '#e7eaf0',
-        labels: { style: { color: '#8b93a1' } }
+        gridLineColor: '#e6eaec',
+        labels: { style: { color: '#78909c' } }
       },
       legend: { enabled: false },
       tooltip: { pointFormat: 'Visitors: <b>{point.y}</b>' },
@@ -119,7 +132,7 @@ export class DemographicsPanelComponent implements OnChanges {
           dataLabels: {
             enabled: true,
             format: '{point.y}',
-            style: { color: '#5b6472', textOutline: 'none', fontSize: '11px' }
+            style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' }
           }
         }
       },

@@ -1,0 +1,36 @@
+<mat-card class="xros-card trial-rooms-card" *ngIf="proxy && proxy.status !== 'none'">
+  <div class="panel-header">
+    <span class="section-tag">TRIAL ROOMS</span>
+    <span class="proxy-badge">Best-effort zone match</span>
+  </div>
+
+  <div class="zone-block" *ngFor="let z of proxy!.zones; last as isLast" [class.with-divider]="proxy!.status === 'multiple' && !isLast">
+    <div class="zone-name" [class.zone-name-muted]="proxy!.status === 'matched'">{{ z.zoneName }}</div>
+
+    <div class="traffic-tile">
+      <div class="stat-label">Traffic</div>
+      <div class="hero-value">{{ z.traffic | number }}</div>
+      <div class="stat-sub">{{ z.visitors | number }} visitors recorded in this zone</div>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric-tile">
+        <div class="stat-label">Visitor Rate</div>
+        <div class="stat-value">{{ visitRatePct(z) }}%</div>
+        <div class="stat-sub">{{ z.visitors | number }} of {{ z.traffic | number }} traffic</div>
+        <div class="progress-track"><div class="progress-fill fill-blue" [style.width.%]="visitRatePct(z)"></div></div>
+      </div>
+      <div class="metric-tile">
+        <div class="stat-label">Attention Capture</div>
+        <div class="stat-value">{{ attentionRatePct(z) }}%</div>
+        <div class="stat-sub">{{ z.attentionVisitors | number }} attention visitors</div>
+        <div class="progress-track"><div class="progress-fill fill-purple" [style.width.%]="attentionRatePct(z)"></div></div>
+      </div>
+      <div class="metric-tile">
+        <div class="stat-label">Avg Dwell Time</div>
+        <div class="stat-value">{{ formatDuration(z.avgResidenceTime) }}</div>
+        <div class="stat-sub">Across {{ z.visitors | number }} recorded visits</div>
+      </div>
+    </div>
+  </div>
+</mat-card>

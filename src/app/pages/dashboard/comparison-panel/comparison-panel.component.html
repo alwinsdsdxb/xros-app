@@ -1,0 +1,217 @@
+<div class="comparison-page">
+  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+    <div class="filter-box" *ngIf="dashboards.length > 1">
+      <span class="filter-caption">Dashboard</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
+        <mat-select [value]="dashboardId" (selectionChange)="dashboardChange.emit($event.value)">
+          <mat-option *ngFor="let d of dashboards" [value]="d._id">{{ d.dashboardName }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Store</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
+        <mat-select formControlName="store">
+          <mat-option value="all">All Stores</mat-option>
+          <mat-option *ngFor="let s of storeOptions" [value]="s.value">{{ s.label }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">View</span>
+      <mat-button-toggle-group formControlName="view" class="seg-toggle">
+        <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Date Range</span>
+      <button type="button" class="date-range-btn" (click)="picker.open()">
+        <span class="date-range-main">{{
+          filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
+        }}</span>
+        <span class="date-range-sub">{{ filterForm.value.view }}</span>
+        <mat-icon class="date-range-icon">calendar_today</mat-icon>
+      </button>
+      <input class="date-range-input" matInput [matDatepicker]="picker" formControlName="date" />
+      <mat-datepicker #picker [startView]="usesMonthPicker ? 'year' : 'month'" (monthSelected)="onMonthSelected($event, picker)"></mat-datepicker>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Hours</span>
+      <mat-button-toggle-group formControlName="operationalHours" class="seg-toggle">
+        <mat-button-toggle *ngFor="let h of hoursOptions" [value]="h.value">{{ h.label }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">Apply</button>
+  </mat-card>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading comparison data...</span>
+  </div>
+
+  <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <app-active-campaigns-panel
+    [campaigns]="campaignsForPanel"
+    [rangeFrom]="campaignsRangeFrom"
+    [rangeTo]="campaignsRangeTo"
+  ></app-active-campaigns-panel>
+
+  <div class="comparison-container">
+    <div class="comparison-header-row">
+      <div class="comparison-header-text">
+        <span class="section-tag">COMPARISON</span>
+        <div class="comparison-title">Daily Distribution</div>
+        <div class="comparison-desc">
+          Compare the current filtered period against the previous equivalent range with a clearer bar-based traffic view.
+        </div>
+      </div>
+      <div class="view-by-block">
+        <span class="filter-caption">View By</span>
+        <select class="view-by-select" [ngModel]="viewBy" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onViewByChange($event)">
+          <option *ngFor="let v of viewByOptions" [value]="v">{{ v }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="xros-card comparison-kpi-tile">
+        <div class="stat-label">Current Range</div>
+        <div class="stat-value">{{ currentTotal | number }}</div>
+        <div class="stat-sub">{{ currentRangeLabel }}</div>
+      </div>
+      <div class="xros-card comparison-kpi-tile">
+        <div class="stat-label">Previous Range</div>
+        <div class="stat-value">{{ previousTotal | number }}</div>
+        <div class="stat-sub">{{ previousRangeLabel }}</div>
+      </div>
+      <div class="xros-card comparison-kpi-tile">
+        <div class="stat-label">Variation</div>
+        <div class="stat-value" [class.delta-positive]="variationPct >= 0" [class.delta-negative]="variationPct < 0">
+          {{ variationPct >= 0 ? '+' : '' }}{{ variationPct }}%
+        </div>
+        <div class="stat-sub">vs previous comparison window</div>
+      </div>
+      <div class="xros-card comparison-kpi-tile">
+        <div class="stat-label">Daily Average</div>
+        <div class="stat-value">{{ dailyAverage | number }}</div>
+        <div class="stat-sub">{{ activeDaysCount }} active days</div>
+      </div>
+    </div>
+
+    <div class="xros-card chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Daily Distribution</div>
+        <div class="chart-sub">{{ currentRangeLabel }} vs {{ previousRangeLabel }}</div>
+      </div>
+      <highcharts-chart
+        [Highcharts]="Highcharts"
+        [options]="chartOptions"
+        [oneToOne]="true"
+        style="display: block; width: 100%; height: 320px"
+      ></highcharts-chart>
+    </div>
+
+    <div class="summary-tile-row">
+      <div class="xros-card summary-tile">
+        <div class="stat-label">Busiest Day</div>
+        <div class="stat-value">{{ busiestDay.value }}</div>
+        <div class="stat-sub">{{ busiestDay.sub }}</div>
+      </div>
+      <div class="xros-card summary-tile">
+        <div class="stat-label">Peak Hour</div>
+        <div class="stat-value">{{ peakHour.value }}</div>
+        <div class="stat-sub">{{ peakHour.sub }}</div>
+      </div>
+      <div class="xros-card summary-tile">
+        <div class="stat-label">Weekend Average</div>
+        <div class="stat-value">{{ weekendAverage.value | number }}</div>
+        <div class="stat-sub">{{ weekendAverage.sub }}</div>
+      </div>
+      <div class="xros-card summary-tile">
+        <div class="stat-label">Weekday Average</div>
+        <div class="stat-value">{{ weekdayAverage.value | number }}</div>
+        <div class="stat-sub">{{ weekdayAverage.sub }}</div>
+      </div>
+    </div>
+
+    <div class="xros-card periodic-card">
+      <div class="periodic-header">
+        <div>
+          <div class="periodic-title">Periodic Analysis</div>
+          <div class="periodic-sub">Day, month-to-date, and year-to-date variance report</div>
+        </div>
+        <button type="button" class="customize-btn">Customize Widget</button>
+      </div>
+
+      <div class="periodic-table-scroll">
+        <table class="periodic-table">
+          <thead>
+            <tr class="group-header-row">
+              <th class="period-col" rowspan="2">Period</th>
+              <th colspan="4" class="group-day">Day</th>
+              <th colspan="4" class="group-mtd">Month to Date</th>
+              <th colspan="4" class="group-ytd">Year to Date</th>
+            </tr>
+            <tr class="sub-header-row">
+              <th class="sub-day">Traffic</th>
+              <th class="sub-day">Traffic LY</th>
+              <th class="sub-day">Variation</th>
+              <th class="sub-day">Variation %</th>
+              <th class="sub-mtd">Traffic</th>
+              <th class="sub-mtd">Traffic LY</th>
+              <th class="sub-mtd">Variation</th>
+              <th class="sub-mtd">Variation %</th>
+              <th class="sub-ytd">Traffic</th>
+              <th class="sub-ytd">Traffic LY</th>
+              <th class="sub-ytd">Variation</th>
+              <th class="sub-ytd">Variation %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of periodicRows">
+              <td class="period-cell">
+                <div class="period-date">{{ row.date }}</div>
+                <div class="period-day">{{ row.day }} · {{ row.dayNum }}</div>
+              </td>
+              <ng-container *ngFor="let g of row.groups">
+                <td class="num-cell">{{ g.traffic | number }}</td>
+                <td class="num-cell muted-cell">{{ g.trafficLy | number }}</td>
+                <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
+                  {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
+                </td>
+                <td class="num-cell">
+                  <span class="delta-pill" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
+                    {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
+                  </span>
+                </td>
+              </ng-container>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr *ngFor="let row of periodicSummaryRows" class="summary-row">
+              <td class="period-cell summary-label">{{ row.label }}</td>
+              <ng-container *ngFor="let g of row.groups">
+                <td class="num-cell">{{ g.traffic | number }}</td>
+                <td class="num-cell muted-cell">{{ g.trafficLy | number }}</td>
+                <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
+                  {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
+                </td>
+                <td class="num-cell">
+                  <span class="delta-pill" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
+                    {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
+                  </span>
+                </td>
+              </ng-container>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

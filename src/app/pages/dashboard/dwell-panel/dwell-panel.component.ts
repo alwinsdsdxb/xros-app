@@ -12,6 +12,8 @@ interface DwellTile {
 interface EngagementLegendItem {
   label: string;
   color: string;
+  value: number;
+  pct: number;
 }
 
 @Component({
@@ -21,6 +23,19 @@ interface EngagementLegendItem {
 })
 export class DwellPanelComponent implements OnChanges {
   @Input() dwell: Dwell | null = null;
+  @Input() view = 'Day';
+
+  private readonly previousPeriodLabels: Record<string, string> = {
+    Day: 'prev day',
+    Week: 'prev week',
+    Month: 'prev month',
+    Year: 'prev year',
+    Custom: 'prev period'
+  };
+
+  get previousPeriodLabel(): string {
+    return this.previousPeriodLabels[this.view] ?? 'prev period';
+  }
 
   Highcharts: typeof Highcharts = Highcharts;
   distributionChartOptions: Highcharts.Options = {};
@@ -28,7 +43,7 @@ export class DwellPanelComponent implements OnChanges {
   trendChartOptions: Highcharts.Options = {};
   engagementLegend: EngagementLegendItem[] = [];
 
-  private readonly engagementPalette = ['#173a56', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
+  private readonly engagementPalette = ['#263238', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
 
   get tiles(): DwellTile[] {
     const d = this.dwell;
@@ -84,20 +99,20 @@ export class DwellPanelComponent implements OnChanges {
       credits: { enabled: false },
       xAxis: {
         categories: buckets.map((b) => b.label),
-        labels: { style: { color: '#5b6472', fontSize: '11px' } }
+        labels: { style: { color: '#546e7a', fontSize: '11px' } }
       },
       yAxis: {
         title: { text: undefined },
-        gridLineColor: '#e7eaf0',
-        labels: { style: { color: '#8b93a1' } }
+        gridLineColor: '#e6eaec',
+        labels: { style: { color: '#78909c' } }
       },
       legend: { enabled: false },
       plotOptions: {
         bar: {
-          color: '#173a56',
+          color: '#263238',
           borderRadius: 3,
           groupPadding: 0.18,
-          dataLabels: { enabled: true, style: { color: '#5b6472', textOutline: 'none', fontSize: '11px' } }
+          dataLabels: { enabled: true, style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' } }
         }
       },
       series: [
@@ -110,25 +125,41 @@ export class DwellPanelComponent implements OnChanges {
     };
   }
 
+  // Reuses the Dwell Time distribution's raw visitor counts (there's no
+  // separate real "engagement composition" widget), relabeled per dwell tier
+  // by the parent. Styled like the Gender Split donut elsewhere on this
+  // dashboard for visual consistency: thin ring, no crowded inner labels,
+  // center total, external legend carrying the real value + share.
   private buildEngagementChart(): void {
     const buckets = this.dwell?.engagementComposition ?? [];
     const palette = this.engagementPalette;
+    const total = buckets.reduce((sum, b) => sum + b.value, 0);
 
-    this.engagementLegend = buckets.map((b, i) => ({ label: b.label, color: palette[i % palette.length] }));
+    this.engagementLegend = buckets.map((b, i) => ({
+      label: b.label,
+      color: palette[i % palette.length],
+      value: b.value,
+      pct: total > 0 ? Math.round((b.value / total) * 100) : 0
+    }));
 
     this.engagementChartOptions = {
       chart: { type: 'pie', backgroundColor: 'transparent', height: 220 },
-      title: { text: undefined },
+      title: {
+        text: total ? `${total.toLocaleString()}<br/><span style="font-size:11px;font-weight:400">Visits</span>` : '',
+        align: 'center',
+        verticalAlign: 'middle',
+        y: 4,
+        style: { color: '#263238', fontSize: '22px', fontWeight: '600' }
+      },
       credits: { enabled: false },
-      tooltip: { pointFormat: '{point.name}: <b>{point.y}%</b>' },
+      tooltip: { pointFormat: '{point.name}: <b>{point.y}</b> visits ({point.percentage:.1f}%)' },
       plotOptions: {
         pie: {
-          innerSize: '62%',
-          dataLabels: {
-            enabled: true,
-            format: '{point.name}: {point.y}%',
-            style: { color: '#14213d', textOutline: 'none', fontSize: '10.5px' }
-          }
+          innerSize: '72%',
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          states: { hover: { halo: { size: 6 } } },
+          dataLabels: { enabled: false }
         }
       },
       legend: { enabled: false },
@@ -151,19 +182,19 @@ export class DwellPanelComponent implements OnChanges {
       credits: { enabled: false },
       xAxis: {
         categories: points.map((p) => p.time),
-        labels: { style: { color: '#8b93a1', fontSize: '11px' } }
+        labels: { style: { color: '#78909c', fontSize: '11px' } }
       },
       yAxis: {
         title: { text: undefined },
-        gridLineColor: '#e7eaf0',
-        labels: { style: { color: '#8b93a1' } }
+        gridLineColor: '#e6eaec',
+        labels: { style: { color: '#78909c' } }
       },
       legend: {
         enabled: true,
         align: 'right',
         verticalAlign: 'top',
         floating: true,
-        itemStyle: { color: '#5b6472', fontSize: '11px', fontWeight: '600' },
+        itemStyle: { color: '#546e7a', fontSize: '11px', fontWeight: '600' },
         symbolWidth: 10,
         symbolRadius: 5
       },
@@ -186,7 +217,7 @@ export class DwellPanelComponent implements OnChanges {
         {
           type: 'area',
           name: 'Previous Day',
-          color: '#8b93a1',
+          color: '#78909c',
           dashStyle: 'ShortDash',
           fillOpacity: 0,
           data: points.map((p) => p.previousDay)

@@ -1,0 +1,71 @@
+<mat-card class="xros-card zone-table-card">
+  <span class="section-tag">ZONE FILTERS</span>
+  <div class="page-section-title">Zone Data Visibility &amp; Ranked Analysis</div>
+  <p class="panel-subtitle">Ranked from the same Zone Heat & Flow Analysis data - filter visible zones to focus on specific retail areas.</p>
+
+  <div class="zone-chip-row">
+    <button type="button" class="zone-chip" [class.active]="selectedZoneKey === 'all'" (click)="selectZone('all')">
+      All Zones
+    </button>
+    <button
+      type="button"
+      class="zone-chip"
+      *ngFor="let z of zones"
+      [class.active]="selectedZoneKey === z.key"
+      (click)="selectZone(z.key)"
+    >
+      <span class="chip-dot" [style.background]="colorForZone(z.key)"></span>
+      {{ z.label }}
+    </button>
+  </div>
+
+  <div class="highlight-grid" *ngIf="highlights as h">
+    <div class="highlight-tile">
+      <div class="stat-label">Top Traffic Zone</div>
+      <div class="highlight-value">{{ h.topTrafficZone.label }}</div>
+      <div class="stat-sub">{{ h.topTrafficZone.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Most Attention</div>
+      <div class="highlight-value">{{ h.mostAttentionZone.label }}</div>
+      <div class="stat-sub">{{ h.mostAttentionZone.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Longest Dwell</div>
+      <div class="highlight-value">{{ h.longestDwellZone.label }}</div>
+      <div class="stat-sub">{{ h.longestDwellZone.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Opportunity Zone</div>
+      <div class="highlight-value">{{ h.opportunityZone.label }}</div>
+      <div class="stat-sub">{{ h.opportunityZone.sub }}</div>
+    </div>
+  </div>
+
+  <div class="zone-table">
+    <div class="zone-table-header">
+      <span>Zone</span>
+      <span>Traffic</span>
+      <span>Visitors</span>
+      <span>Attention</span>
+      <span>Avg Dwell</span>
+      <span>Visitor Traffic</span>
+      <span>Share</span>
+    </div>
+    <div class="zone-table-row" *ngFor="let z of filteredZones">
+      <span class="zone-name">
+        <span class="row-dot" [style.background]="colorForZone(z.key)"></span>
+        {{ z.label }}
+      </span>
+      <span>{{ z.traffic | number }}</span>
+      <span>{{ z.visitors | number }}</span>
+      <span>{{ z.attentionVisitors | number }}</span>
+      <span>{{ formatDuration(z.avgResidenceTime) }}</span>
+      <span>{{ z.visitorTraffic | number }}</span>
+      <span class="share-cell">
+        <span class="row-dot" [style.background]="colorForZone(z.key)"></span>
+        {{ z.sharePct }}%
+      </span>
+    </div>
+  </div>
+</mat-card>

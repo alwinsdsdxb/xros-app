@@ -1,0 +1,49 @@
+<div class="roster-page">
+  <mat-card class="xros-card roster-hero">
+    <div class="hero-text">
+      <span class="section-tag">EMPLOYEE ROSTER</span>
+      <h2 class="hero-title">Your approved weekly schedule</h2>
+      <p class="hero-subtitle">
+        Only approved rosters appear here. If the manager is still editing, this page will clearly show that the
+        week is not released yet.
+      </p>
+    </div>
+
+    <div class="week-nav">
+      <button mat-icon-button (click)="previousWeek()" aria-label="Previous week">
+        <mat-icon>chevron_left</mat-icon>
+      </button>
+      <div class="week-range">
+        <div class="range-label">{{ rangeLabel }}</div>
+        <div class="range-year">{{ yearLabel }}</div>
+      </div>
+      <button mat-icon-button (click)="nextWeek()" aria-label="Next week">
+        <mat-icon>chevron_right</mat-icon>
+      </button>
+    </div>
+  </mat-card>
+
+  <mat-card class="xros-card roster-alert">
+    <div class="alert-icon">!</div>
+    <div class="alert-text">
+      <span class="alert-tag">ROSTER NOT RELEASED</span>
+      <div class="alert-title">The manager has not approved this week yet</div>
+      <div class="alert-subtitle">
+        The schedule is still a draft. Your shifts will appear here automatically after approval.
+      </div>
+    </div>
+  </mat-card>
+
+  <div class="day-grid">
+    <mat-card class="xros-card day-card" *ngFor="let day of days" [class.today]="day.isToday">
+      <div class="day-header">
+        <span class="day-label">{{ day.label }}</span>
+        <span class="day-date">{{ day.dateLabel }}</span>
+      </div>
+      <div class="day-body">
+        <div class="day-status">Pending approval</div>
+        <div class="day-note">Not visible yet.</div>
+      </div>
+    </mat-card>
+  </div>
+</div>

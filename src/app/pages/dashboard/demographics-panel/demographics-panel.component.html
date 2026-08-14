@@ -25,6 +25,12 @@
               <span class="legend-value">{{ d.gender.female | number }}</span>
               <span class="legend-pct">{{ d.gender.femalePct }}%</span>
             </div>
+            <div class="legend-row">
+              <span class="dot" style="background: #78909c"></span>
+              <span class="legend-name">Other</span>
+              <span class="legend-value">{{ (d.gender.unknown ?? 0) | number }}</span>
+              <span class="legend-pct">{{ d.gender.unknownPct ?? 0 }}%</span>
+            </div>
           </div>
         </div>
       </div>
@@ -61,6 +67,4 @@
       </div>
     </div>
   </div>
-
-  <app-trend-chart class="trend-below" [trend]="trend"></app-trend-chart>
 </mat-card>

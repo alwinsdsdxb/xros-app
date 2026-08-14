@@ -1,0 +1,17 @@
+<mat-card class="xros-card campaigns-card" *ngIf="campaigns">
+  <div class="campaigns-header">
+    <span class="section-tag">ACTIVE CAMPAIGNS</span>
+    <span class="campaigns-range" *ngIf="headerRangeLabel">{{ headerRangeLabel }}</span>
+  </div>
+
+  <div class="campaigns-row" *ngIf="visibleCampaigns.length; else noCampaigns">
+    <div class="campaign-card" *ngFor="let c of visibleCampaigns">
+      <div class="campaign-name">{{ c.name }}</div>
+      <div class="campaign-stores" *ngIf="c.storeNames.length">{{ c.storeNames.join(' + ') }}</div>
+      <div class="campaign-range">{{ formatRange(c.from, c.to) }}</div>
+    </div>
+  </div>
+  <ng-template #noCampaigns>
+    <div class="no-campaigns">No campaigns for the current store scope and date range.</div>
+  </ng-template>
+</mat-card>

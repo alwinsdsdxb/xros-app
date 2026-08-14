@@ -1,16 +1,13 @@
-<div class="trend-block">
+<mat-card class="xros-card trend-card">
   <div class="trend-header">
-    <div class="page-section-title">Traffic Trend</div>
+    <span class="section-tag">TREND</span>
     <div class="series-toggles">
-      <mat-checkbox
-        *ngFor="let s of seriesMeta"
-        [checked]="seriesVisibility[s.key]"
-        (change)="toggleSeries(s.key)"
-        color="primary"
-      >
-        <span class="toggle-dot" [style.background]="s.color"></span>
-        {{ s.label }}
-      </mat-checkbox>
+      <label class="trend-toggle-chip" *ngFor="let s of series">
+        <mat-checkbox [checked]="seriesVisibility[s.label]" (change)="toggleSeries(s.label)" color="primary">
+          <span class="toggle-dot" [style.background]="s.color"></span>
+          {{ s.label }}
+        </mat-checkbox>
+      </label>
     </div>
   </div>
   <highcharts-chart
@@ -18,6 +15,11 @@
     [options]="chartOptions"
     [oneToOne]="true"
     (chartInstance)="onChartInstance($event)"
-    style="display: block; width: 100%; height: 260px"
+    style="display: block; width: 100%; height: 320px"
   ></highcharts-chart>
-</div>
+  <div class="trend-range-bar" *ngIf="rangeStart">
+    <span>{{ rangeStart }}</span>
+    <span>{{ rangeMid }}</span>
+    <span>{{ rangeEnd }}</span>
+  </div>
+</mat-card>

@@ -4,6 +4,7 @@ import { RouterModule, Routes } from '@angular/router';
 import { LoginComponent } from './pages/login/login.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { ComingSoonComponent } from './pages/coming-soon/coming-soon.component';
+import { MyRosterComponent } from './pages/my-roster/my-roster.component';
 import { ShellComponent } from './layout/shell/shell.component';
 import { authGuard } from './core/guards/auth.guard';
 
@@ -16,6 +17,7 @@ const routes: Routes = [
     children: [
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
       { path: 'dashboard', component: DashboardComponent, data: { title: 'XR Dashboard' } },
+      { path: 'dashboard/:dashboardId', component: DashboardComponent, data: { title: 'XR Dashboard' } },
       {
         path: 'store-health-score',
         component: ComingSoonComponent,
@@ -41,7 +43,7 @@ const routes: Routes = [
         component: ComingSoonComponent,
         data: { title: 'XR ClimateIQ™' }
       },
-      { path: 'my-roster', component: ComingSoonComponent, data: { title: 'My Roster' } },
+      { path: 'my-roster', component: MyRosterComponent, data: { title: 'My Roster' } },
       {
         path: 'workforce-intelligence',
         component: ComingSoonComponent,

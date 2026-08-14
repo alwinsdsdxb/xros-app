@@ -3,9 +3,16 @@ export interface AuthUser {
   email: string;
   name?: string;
   role?: string;
+  company?: string;
+  tenantId?: string;
+  accountType?: string;
+  defaultDashboard?: string;
 }
 
 export interface LoginResponse {
-  accessToken: string;
-  user?: AuthUser;
+  statusCode: number;
+  message: string;
+  data: {
+    token: string;
+  };
 }

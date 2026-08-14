@@ -1,0 +1,176 @@
+.roster-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding-bottom: 32px;
+}
+
+.roster-hero {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  background: #ffffff;
+}
+
+.hero-text {
+  display: flex;
+  flex-direction: column;
+  max-width: 640px;
+}
+
+.hero-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--ink-primary);
+  margin: 0 0 8px;
+}
+
+.hero-subtitle {
+  font-size: 13px;
+  color: var(--ink-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.week-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid var(--border-hairline);
+  border-radius: 12px;
+  padding: 8px 10px;
+  box-shadow:
+    0 6px 16px rgba(38, 50, 56, 0.09),
+    0 1px 3px rgba(38, 50, 56, 0.1);
+  flex: none;
+}
+
+.week-range {
+  text-align: center;
+  min-width: 150px;
+}
+
+.range-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.range-year {
+  font-size: 11px;
+  color: var(--ink-muted);
+}
+
+.roster-alert {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 16px;
+  background: #ffffff;
+  border-color: #f0dcb8 !important;
+}
+
+.alert-icon {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-tag {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ink-secondary);
+  margin-bottom: 4px;
+}
+
+.alert-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin-bottom: 4px;
+}
+
+.alert-subtitle {
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+}
+
+.day-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.day-card {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 18px;
+  padding: 16px !important;
+}
+
+.day-card.today {
+  box-shadow:
+    0 0 0 3px var(--series-2),
+    0 12px 26px rgba(226, 112, 58, 0.45);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.day-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-secondary);
+}
+
+.day-date {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.day-status {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.day-note {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 2px;
+}
+
+@media (max-width: 1100px) {
+  .day-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .roster-hero {
+    flex-direction: column !important;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .day-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

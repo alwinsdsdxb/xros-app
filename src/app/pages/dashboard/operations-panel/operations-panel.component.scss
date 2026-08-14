@@ -1,7 +1,7 @@
 .ops-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 16px;
+  gap: 14px;
 }
 
 @media (max-width: 1100px) {
@@ -19,19 +19,40 @@
 .ops-tile {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
+  background: var(--page-plane, #f8fafb);
+  border: 1px solid var(--gridline, #e6eaec);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.ops-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
   background: #ffffff;
-  border: 1px solid var(--gridline, #e7eaf0);
-  border-radius: 10px;
-  padding: 14px;
+  border: 1px solid var(--gridline, #e6eaec);
+  flex: none;
+}
+
+.ops-icon-badge-good {
+  background: var(--delta-good-bg, #e4f5ea);
+  border-color: transparent;
+}
+
+.ops-icon-badge-bad {
+  background: var(--delta-bad-bg, #fce9e9);
+  border-color: transparent;
 }
 
 .ops-icon {
-  color: var(--navy, #173a56);
-  font-size: 24px;
-  height: 24px;
-  width: 24px;
-  margin-top: 2px;
+  color: var(--navy, #263238);
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
 }
 
 .icon-good {
@@ -42,10 +63,23 @@
   color: var(--delta-bad, #d64545);
 }
 
-.ops-value {
-  font-size: 20px;
+.ops-label {
+  font-size: 11px;
   font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-secondary, #546e7a);
+  margin-bottom: 2px;
+}
+
+.ops-value {
+  font-size: 22px;
+  font-weight: 600;
   color: var(--ink-primary, #0b0b0b);
+}
+
+.ops-value-muted {
+  color: var(--ink-muted, #898781);
 }
 
 .ops-sub {

@@ -14,7 +14,7 @@
         >
           {{ t.changePct >= 0 ? '+' : '' }}{{ t.changePct }}%
         </span>
-        <span class="tile-prev">vs {{ t.previousDay }} prev day</span>
+        <span class="tile-prev">vs {{ t.previousDay }} {{ previousPeriodLabel }}</span>
       </div>
     </div>
   </div>
@@ -40,7 +40,9 @@
       ></highcharts-chart>
       <div class="engagement-legend">
         <span class="legend-chip" *ngFor="let l of engagementLegend">
-          <span class="dot" [style.background]="l.color"></span>{{ l.label }}
+          <span class="dot" [style.background]="l.color"></span>
+          <span class="legend-label">{{ l.label }}</span>
+          <span class="legend-pct">{{ l.pct }}%</span>
         </span>
       </div>
     </div>

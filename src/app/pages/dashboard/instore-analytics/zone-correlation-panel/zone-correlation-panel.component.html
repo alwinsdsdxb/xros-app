@@ -1,0 +1,119 @@
+<mat-card class="xros-card correlation-card" *ngIf="correlation as c">
+  <span class="section-tag">ZONE CORRELATION</span>
+  <div class="page-section-title">Zone Relationship &amp; Flow Analysis</div>
+  <p class="panel-subtitle">
+    Explore how zones relate — customer flow, metric comparison, and dwell patterns.
+  </p>
+
+  <div class="correlation-tabs">
+    <button
+      type="button"
+      class="correlation-tab"
+      *ngFor="let t of tabs"
+      [class.active]="activeTab === t.key"
+      [class.disabled]="!t.enabled"
+      (click)="selectTab(t)"
+    >
+      {{ t.label }}
+    </button>
+  </div>
+
+  <ng-container *ngIf="activeTab === 'customer-flow'">
+    <p class="chart-caption">
+      <ng-container *ngIf="totalFlowCount > shownFlowCount">
+        Strongest {{ shownFlowCount }} of {{ totalFlowCount }} zone-to-zone flows, ranked by shared visitor volume. Arc width = volume.
+      </ng-container>
+      <ng-container *ngIf="totalFlowCount <= shownFlowCount">
+        Modelled flow based on zone traffic share. Arc width = cross-zone visitor volume.
+      </ng-container>
+    </p>
+
+    <highcharts-chart
+      *ngIf="shownFlowCount; else noFlowData"
+      [Highcharts]="Highcharts"
+      [options]="chartOptions"
+      [oneToOne]="true"
+      style="display: block; width: 100%; height: 380px"
+    ></highcharts-chart>
+    <ng-template #noFlowData>
+      <div class="no-flow-data">No zone-to-zone flow data for this date yet.</div>
+    </ng-template>
+  </ng-container>
+
+  <div class="matrix-table" *ngIf="activeTab === 'metric-matrix'">
+    <ng-container *ngIf="matrixRows.length; else noMatrixData">
+      <div class="matrix-header">
+        <span>Zone</span>
+        <span>Traffic</span>
+        <span>Share %</span>
+        <span>Capture %</span>
+        <span>Dwell</span>
+      </div>
+      <div class="matrix-row" *ngFor="let r of matrixRows">
+        <span class="zone-name">
+          <span class="row-dot" [style.background]="r.color"></span>
+          {{ r.label }}
+        </span>
+        <span class="metric-cell">
+          <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.traffic | number }}</span>
+        </span>
+        <span class="metric-cell">
+          <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.sharePct }}</span>
+          <span class="metric-unit">%</span>
+        </span>
+        <span class="metric-cell">
+          <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.capturePct }}</span>
+          <span class="metric-unit">%</span>
+        </span>
+        <span class="metric-cell">
+          <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.dwellSeconds }}</span>
+          <span class="metric-unit">s</span>
+        </span>
+      </div>
+    </ng-container>
+    <ng-template #noMatrixData>
+      <div class="no-flow-data">No zone metric data for this date yet.</div>
+    </ng-template>
+  </div>
+
+  <div class="dwell-grid" *ngIf="activeTab === 'dwell-comparison'">
+    <ng-container *ngIf="dwellComparisonRows.length; else noDwellData">
+      <div class="dwell-card" *ngFor="let r of dwellComparisonRows" [style.border-left-color]="r.color">
+        <div class="dwell-card-title">
+          <span class="row-dot" [style.background]="r.color"></span>
+          {{ r.label }}
+        </div>
+        <div class="dwell-time" [style.color]="r.color">{{ r.dwellLabel }}</div>
+        <div class="dwell-tag-row">
+          <span class="dwell-tag">{{ r.capturePct }}% capture</span>
+        </div>
+      </div>
+    </ng-container>
+    <ng-template #noDwellData>
+      <div class="no-flow-data">No zone dwell data for this date yet.</div>
+    </ng-template>
+  </div>
+
+  <div class="highlight-grid">
+    <div class="highlight-tile">
+      <div class="stat-label">Strongest Flow</div>
+      <div class="highlight-value">{{ c.strongestFlow.label }}</div>
+      <div class="stat-sub">{{ c.strongestFlow.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Highest Capture</div>
+      <div class="highlight-value">{{ highestCaptureTile.label }}</div>
+      <div class="stat-sub">{{ highestCaptureTile.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Engagement Leader</div>
+      <div class="highlight-value">{{ engagementLeaderTile.label }}</div>
+      <div class="stat-sub">{{ engagementLeaderTile.sub }}</div>
+    </div>
+    <div class="highlight-tile">
+      <div class="stat-label">Avg Zones / Visit</div>
+      <div class="highlight-value">{{ c.avgZonesPerVisit.value }}</div>
+      <div class="stat-sub">{{ c.avgZonesPerVisit.sub }}</div>
+    </div>
+  </div>
+</mat-card>

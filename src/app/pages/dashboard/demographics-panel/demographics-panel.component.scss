@@ -1,27 +1,35 @@
+.section-tag {
+  padding: 2px 7px;
+  font-size: 10px;
+}
+
 .demographics-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  gap: 16px;
   align-items: start;
 }
 
 .trend-below {
   display: block;
-  margin-top: 24px;
-  padding-top: 24px;
-  border-top: 1px solid var(--gridline, #e7eaf0);
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--gridline, #e6eaec);
 }
 
 .demo-col {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
   min-width: 0;
 }
 
 .demo-block {
   display: block;
   min-width: 0;
+  background: #f8fafb;
+  border-radius: 20px;
+  padding: 20px;
 }
 
 @media (max-width: 1000px) {
@@ -36,7 +44,7 @@
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--ink-secondary);
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .gender-row {
@@ -52,6 +60,8 @@
 .gender-legend {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
   gap: 10px;
 }
 
@@ -61,6 +71,10 @@
   gap: 8px;
   font-size: 13px;
   color: var(--ink-primary);
+  background: #ffffff;
+  border: 1px solid var(--gridline);
+  border-radius: 10px;
+  padding: 8px 10px;
 }
 
 .legend-name {
@@ -69,11 +83,15 @@
 
 .legend-value {
   font-weight: 700;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .legend-pct {
   color: var(--ink-muted);
   font-size: 12px;
+  min-width: 34px;
+  text-align: right;
 }
 
 .dot {
@@ -88,7 +106,7 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .age-stat {
@@ -97,7 +115,7 @@
   gap: 8px;
   border: 1px solid var(--gridline);
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 6px 8px;
 }
 
 .age-stat .dot {
@@ -132,8 +150,8 @@
   align-items: center;
   gap: 10px;
   border: 1px solid var(--gridline);
-  border-radius: 10px;
-  padding: 10px 14px;
+  border-radius: 8px;
+  padding: 8px 10px;
 }
 
 .group-icon {

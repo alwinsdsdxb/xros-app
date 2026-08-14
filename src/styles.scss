@@ -6,45 +6,40 @@ body {
 
 body {
   margin: 0;
-  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-  background: #f4f6f9;
-  color: #14213d;
+  font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
+  background: #f8fafb;
+  color: #263238;
 }
 
 * {
   box-sizing: border-box;
 }
 
-.mat-typography h1,
-.mat-typography h2,
-.mat-typography h3,
-.mat-typography h4,
-.mat-typography h5,
-.mat-typography h6,
-.mat-typography p {
-  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+// `.mat-typography *` covers every descendant of `<body class="mat-typography">`
+// (index.html) - including CDK-overlay content (dialogs, menus, tooltips,
+// select/autocomplete panels, datepicker) which the CDK appends as a body
+// child, not inside <app-root> - so this single rule reaches Material
+// internals that a per-component class list would otherwise miss.
+.mat-typography,
+.mat-typography * {
+  font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif !important;
 }
 
-.mat-typography,
-.mat-mdc-form-field,
-.mat-mdc-select,
-.mat-mdc-button,
-.mat-mdc-raised-button,
-.mat-mdc-outlined-button,
-.mat-mdc-unelevated-button,
-.mat-mdc-card,
-.mat-mdc-checkbox,
-.mat-mdc-list-item,
-input,
-button {
-  font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif !important;
+// mat-icon renders ligature icons (e.g. "wifi", "groups") as literal text in
+// the "Material Icons" font, which maps those words to glyphs - the wildcard
+// Poppins override above also matched these elements and broke every icon
+// into visible text. Same selector specificity as the rule above, so source
+// order after it wins.
+.material-icons,
+mat-icon.material-icons {
+  font-family: 'Material Icons' !important;
 }
 
 :root {
   /* Brand */
-  --navy: #173a56;
-  --navy-dark: #102943;
-  --navy-tint: rgba(23, 58, 86, 0.08);
+  --navy: #263238;
+  --navy-dark: #263238;
+  --navy-tint: rgba(38, 50, 56, 0.04);
 
   /* Data-viz / funnel palette (categorical, fixed order) */
   --series-1: #2f6fa7; /* blue */
@@ -57,25 +52,25 @@ button {
   --series-8: #d64545; /* red */
 
   --chart-surface: #ffffff;
-  --page-plane: #f4f6f9;
-  --ink-primary: #14213d;
-  --ink-secondary: #5b6472;
-  --ink-muted: #8b93a1;
-  --gridline: #e7eaf0;
-  --axis: #c7cdd8;
+  --page-plane: #f8fafb;
+  --ink-primary: #263238;
+  --ink-secondary: #546e7a;
+  --ink-muted: #78909c;
+  --gridline: #e6eaec;
+  --axis: #b3c0c6;
   --delta-good: #1e8a57;
   --delta-good-bg: #e4f5ea;
   --delta-bad: #d64545;
   --delta-bad-bg: #fce9e9;
-  --border-hairline: #e7eaf0;
+  --border-hairline: #e6eaec;
 }
 
 .xros-card {
-  border-radius: 16px !important;
-  border: 1px solid #dde2ea;
+  border-radius: 10px !important;
+  border: 1px solid #e6eaec;
   box-shadow:
-    0 6px 16px rgba(20, 33, 61, 0.09),
-    0 1px 3px rgba(20, 33, 61, 0.08) !important;
+    0 24px 48px -12px rgba(38, 50, 56, 0.16),
+    0 4px 12px rgba(38, 50, 56, 0.1) !important;
 }
 
 .delta-positive {
@@ -94,8 +89,9 @@ button {
   gap: 2px;
   padding: 1px 6px;
   border-radius: 20px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .delta-pill.delta-positive {
@@ -109,14 +105,14 @@ button {
 }
 
 .mat-mdc-card.xros-card {
-  padding: 22px 24px;
+  padding: 16px 18px;
 }
 
 .page-section-title {
   font-size: 15px;
   font-weight: 700;
   color: var(--ink-primary);
-  margin: 0 0 14px 0;
+  margin: 0 0 10px 0;
 }
 
 /* Nudge Material's default indigo accents toward the navy brand color */
@@ -143,9 +139,53 @@ button {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--ink-secondary);
-  background: var(--page-plane);
-  border: 1px solid var(--border-hairline);
-  border-radius: 6px;
-  padding: 4px 10px;
-  margin-bottom: 14px;
+  background: #e6eaec;
+  border-radius: 50px;
+  padding: 3px 9px;
+  margin-bottom: 10px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  margin-bottom: 6px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.stat-sub {
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+
+.highlight-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 16px 0;
+  margin-bottom: 18px;
+}
+
+.highlight-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.highlight-tile {
+  background: #eceff1;
+  border: 1px solid #cfd8dc;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+@media (max-width: 900px) {
+  .highlight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -40,7 +40,7 @@ export interface GroupSizeBucket {
 
 export interface Demographics {
   totalVisitors: number;
-  gender: { male: number; malePct: number; female: number; femalePct: number };
+  gender: { male: number; malePct: number; female: number; femalePct: number; unknown?: number; unknownPct?: number };
   ageGroups: AgeGroup[];
   groupSize: {
     solo: GroupSizeBucket;
@@ -90,14 +90,13 @@ export interface Dwell {
 }
 
 export interface Operations {
-  temperatureC: number;
-  feelsLikeC: number;
-  location: string;
-  liveOccupancy: number;
-  occupancyUpdatedMinsAgo: number;
+  temperatureC?: number;
+  weatherCondition?: string;
+  location?: string;
+  liveOccupancy?: number;
+  occupancyUpdatedMinsAgo?: number;
   devicesOnline: number;
   devicesOfflineCount: number;
-  devicesOfflineNote: string;
 }
 
 export interface DashboardResponse {
@@ -110,6 +109,16 @@ export interface DashboardResponse {
   trend: TrendPoint[];
   dwell: Dwell;
   operations: Operations;
+}
+
+export interface CampaignEvent {
+  id: string;
+  name: string;
+  from: string;
+  to: string;
+  budget: number;
+  target: number;
+  storeNames: string[];
 }
 
 export interface DashboardQueryParams {

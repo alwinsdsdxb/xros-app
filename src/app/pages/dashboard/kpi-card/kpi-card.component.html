@@ -1,7 +1,9 @@
 <mat-card class="xros-card kpi-card">
   <div class="kpi-header">
     <div class="kpi-header-left">
-      <mat-icon class="kpi-icon">{{ icon }}</mat-icon>
+      <span class="kpi-icon-badge">
+        <mat-icon class="kpi-icon">{{ icon }}</mat-icon>
+      </span>
       <span class="kpi-label">{{ label }}</span>
     </div>
     <span class="kpi-date">{{ date }}</span>
@@ -10,8 +12,8 @@
   <div class="kpi-value">{{ metric?.value | number }}</div>
   <div class="kpi-description" *ngIf="description">{{ description }}</div>
 
-  <div class="kpi-comparisons">
-    <div class="comparison-cell" *ngFor="let c of comparisons">
+  <div class="kpi-comparisons" *ngIf="showComparisons">
+    <div class="comparison-box" *ngFor="let c of comparisons">
       <span class="comparison-label">{{ c.label }}</span>
       <div class="comparison-bottom">
         <span class="comparison-value">{{ c.value | number }}</span>
@@ -21,7 +23,7 @@
           [class.delta-negative]="c.changePct < 0"
         >
           <mat-icon class="change-arrow">{{ c.changePct >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-          {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct }}%
+          {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct | number: '1.0-0' }}%
         </span>
       </div>
     </div>

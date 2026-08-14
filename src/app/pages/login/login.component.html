@@ -40,7 +40,6 @@
             matInput
             type="email"
             formControlName="email"
-            [placeholder]="demoEmail"
             autocomplete="username"
           />
           <mat-error *ngIf="form.get('email')?.hasError('required')">Email is required</mat-error>
@@ -53,7 +52,6 @@
             matInput
             [type]="hidePassword ? 'password' : 'text'"
             formControlName="password"
-            [placeholder]="demoPassword"
             autocomplete="current-password"
           />
           <button
@@ -88,9 +86,6 @@
         <div class="info-message" *ngIf="infoMessage">{{ infoMessage }}</div>
       </form>
 
-      <div class="demo-hint">
-        Demo credentials &mdash; <strong>{{ demoEmail }}</strong> / <strong>{{ demoPassword }}</strong>
-      </div>
     </mat-card>
   </div>
 </div>

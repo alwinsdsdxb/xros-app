@@ -1,0 +1,39 @@
+<mat-card class="xros-card peak-hours-card" *ngIf="peakHours as p">
+  <div class="panel-header">
+    <div>
+      <span class="section-tag">PEAK HOURS</span>
+      <div class="page-section-title">Power Hour Footfall</div>
+    </div>
+    <div class="intensity-legend">
+      <span>INTENSITY</span>
+      <span class="intensity-word">Low</span>
+      <span class="intensity-bar"></span>
+      <span class="intensity-word">High</span>
+    </div>
+  </div>
+
+  <div class="peak-stats-row">
+    <div class="peak-stat">
+      <div class="stat-label">Best Slot</div>
+      <div class="stat-value">{{ p.bestSlot.value }}</div>
+      <div class="stat-sub">{{ p.bestSlot.sub }}</div>
+    </div>
+    <div class="peak-stat">
+      <div class="stat-label">Active Slots</div>
+      <div class="stat-value">{{ p.activeSlots.value }}</div>
+      <div class="stat-sub">{{ p.activeSlots.sub }}</div>
+    </div>
+    <div class="peak-stat">
+      <div class="stat-label">Avg Active Slot</div>
+      <div class="stat-value">{{ p.avgActiveSlot.value }}</div>
+      <div class="stat-sub">{{ p.avgActiveSlot.sub }}</div>
+    </div>
+  </div>
+
+  <highcharts-chart
+    [Highcharts]="Highcharts"
+    [options]="chartOptions"
+    [oneToOne]="true"
+    style="display: block; width: 100%; height: 320px"
+  ></highcharts-chart>
+</mat-card>

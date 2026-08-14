@@ -17,9 +17,6 @@ export class LoginComponent implements OnInit {
   toastMessage = '';
   hidePassword = true;
 
-  readonly demoEmail = 'admin@xpandretail.com';
-  readonly demoPassword = 'Password123!';
-
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,

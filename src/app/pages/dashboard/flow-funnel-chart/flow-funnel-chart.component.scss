@@ -1,35 +1,128 @@
+.mat-mdc-card.funnel-card,
+.funnel-card {
+  border-radius: 24px !important;
+  border: 1px solid #d8e3ea !important;
+  box-shadow:
+    0 14px 32px -10px rgba(38, 50, 56, 0.14),
+    0 2px 6px rgba(38, 50, 56, 0.09) !important;
+  padding: 20px 24px !important;
+}
+
+.funnel-header {
+  text-align: left;
+}
+
+.funnel-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--navy);
+  background: #e3eef6;
+  border-radius: 50px;
+  padding: 4px 12px;
+  margin-bottom: 10px;
+}
+
+.funnel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink-primary);
+  margin: 0 0 14px 0;
+}
+
 .funnel-stack {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 4px 0 8px;
+  gap: 6px;
   width: 100%;
 }
 
-.funnel-bar {
-  clip-path: polygon(4% 0, 96% 0, 89% 100%, 11% 100%);
-  min-height: 52px;
+// The shape and its text content are separate layers within the same row:
+// the shape is an absolutely-positioned background clipped to a trapezoid,
+// while the content sits in normal flow (padding, not inset:0) so its
+// natural height - not a fixed min-height - is what determines the row's
+// height, letting a long label wrap onto a second line on a narrow stage
+// instead of overflowing past the trapezoid's edges.
+.funnel-stage {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+// Top edge narrower than the bottom edge (70% up to 94%) - the tapered tip
+// of each individual piece points up, on top of the row-to-row width step
+// in the .funnel-stage widthPct, so the taper reads clearly as a trapezoid
+// rather than a stack of same-shaped rectangles.
+.funnel-stage-shape {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(15% 0, 85% 0, 97% 100%, 3% 100%);
+}
+
+.funnel-stage-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   color: #ffffff;
-  padding: 4px 14px;
-  width: 100%;
+  padding: 8px 20px;
+  text-shadow: 0 1px 2px rgba(38, 50, 56, 0.22);
 }
 
-.bar-label {
-  font-size: 12px;
+.stage-label {
+  font-size: clamp(11px, 1.3vw, 13px);
   font-weight: 700;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.3;
 }
 
-.bar-sub {
-  font-size: 10px;
-  opacity: 0.9;
+.stage-value-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
   margin-top: 2px;
-  white-space: nowrap;
+}
+
+.stage-value {
+  font-size: clamp(20px, 2.2vw, 25px);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.stage-secondary {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.stage-description {
+  margin-top: 2px;
+  font-size: clamp(9.5px, 1vw, 11px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .mat-mdc-card.funnel-card,
+  .funnel-card {
+    padding: 16px 14px !important;
+  }
+
+  .funnel-stack {
+    gap: 5px;
+  }
+
+  .funnel-stage-content {
+    padding: 6px 12px;
+  }
 }

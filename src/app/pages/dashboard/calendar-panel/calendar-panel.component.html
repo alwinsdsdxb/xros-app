@@ -1,0 +1,139 @@
+<div class="calendar-page">
+  <mat-card class="xros-card calendar-card">
+    <div class="calendar-nav-row">
+      <div class="nav-controls">
+        <div class="nav-dashboard-select" *ngIf="dashboards.length > 1">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
+            <mat-select [value]="dashboardId" (selectionChange)="dashboardChange.emit($event.value)">
+              <mat-option *ngFor="let d of dashboards" [value]="d._id">{{ d.dashboardName }}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <button type="button" class="nav-icon-btn" (click)="prevMonth()" [disabled]="loading">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button type="button" class="today-btn" (click)="goToday()" [disabled]="loading">Today</button>
+        <button type="button" class="nav-icon-btn" (click)="nextMonth()" [disabled]="loading">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+
+      <div class="nav-title">
+        <span class="section-tag">CALENDAR</span>
+        <div class="nav-month">{{ data?.monthLabel }}</div>
+        <div class="nav-sub" *ngIf="data">
+          LM = {{ data.lastMonthLabel }} for month, week, weekday, and daily comparisons.
+        </div>
+      </div>
+
+      <div class="available-month-block">
+        <span class="view-label">Available Month</span>
+        <select
+          class="month-select"
+          [ngModel]="data?.month?.slice(0, 7)"
+          (ngModelChange)="onMonthChange($event)"
+          [disabled]="loading || !data"
+        >
+          <option *ngFor="let m of data?.availableMonths" [value]="m.value">{{ m.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="loading-row" *ngIf="loading">
+      <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+      <span>Loading calendar data...</span>
+    </div>
+
+    <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+    <ng-container *ngIf="data as d">
+      <div class="calendar-summary-row">
+        <div class="summary-tile">
+          <div class="stat-label">Month Total</div>
+          <div class="stat-value">{{ formatCount(d.monthTotal) }}</div>
+          <div class="stat-sub">
+            {{ d.lastMonthTotal !== null ? (d.lastMonthLabel + ': ' + formatCount(d.lastMonthTotal)) : 'No baseline' }}
+          </div>
+        </div>
+
+        <div class="summary-tile">
+          <div class="stat-label">Vs Last Month</div>
+          <div class="stat-value">{{ d.monthChangePct !== null ? formatPct(d.monthChangePct) : '—' }}</div>
+          <span class="section-tag inline-tag">{{ d.monthChangePct !== null ? 'Comparison trend' : 'No baseline' }}</span>
+        </div>
+
+        <div class="summary-tile">
+          <div class="stat-label">Best Week</div>
+          <div class="stat-value">{{ d.bestWeek ? d.bestWeek.label : '—' }}</div>
+          <div class="stat-sub">{{ d.bestWeek ? (formatCount(d.bestWeek.total) + ' visitors') : 'No data' }}</div>
+        </div>
+      </div>
+
+      <div class="calendar-grid">
+        <div class="grid-header-row">
+          <div class="grid-cell header-cell week-col">Week</div>
+          <div class="grid-cell header-cell" *ngFor="let w of d.columnLabels">{{ w }}</div>
+          <div class="grid-cell header-cell total-col">Total / Week</div>
+        </div>
+
+        <div class="grid-week-row" *ngFor="let week of d.weeks">
+          <div class="grid-cell week-label-cell week-col">{{ week.label }}</div>
+
+          <div class="grid-cell day-cell" *ngFor="let day of week.days" [class.out-month]="!day.inMonth">
+            <div class="day-number">{{ day.day }}</div>
+            <ng-container *ngIf="day.inMonth">
+              <div class="day-value">{{ formatCount(day.value) }}</div>
+              <div class="day-lm">{{ day.lmValue !== null ? ('LM ' + formatCount(day.lmValue)) : 'No baseline' }}</div>
+              <span
+                class="delta-pill day-delta"
+                *ngIf="day.changePct !== null"
+                [class.delta-positive]="day.changePct >= 0"
+                [class.delta-negative]="day.changePct < 0"
+              >{{ formatPct(day.changePct) }}</span>
+            </ng-container>
+          </div>
+
+          <div class="grid-cell week-total-cell total-col">
+            <div class="day-value">{{ formatCount(week.total) }}</div>
+            <div class="day-lm">{{ week.lmTotal !== null ? ('LM ' + formatCount(week.lmTotal)) : 'No baseline' }}</div>
+            <span
+              class="delta-pill day-delta"
+              *ngIf="week.changePct !== null"
+              [class.delta-positive]="week.changePct >= 0"
+              [class.delta-negative]="week.changePct < 0"
+            >{{ formatPct(week.changePct) }}</span>
+          </div>
+        </div>
+
+        <div class="grid-total-row">
+          <div class="grid-cell total-label-cell week-col">Total</div>
+
+          <div class="grid-cell total-col-cell" *ngFor="let c of d.columnTotals">
+            <div class="day-value">{{ formatCount(c.total) }}</div>
+            <div class="day-lm">{{ c.lmTotal !== null ? ('LM ' + formatCount(c.lmTotal)) : 'No baseline' }}</div>
+            <span
+              class="delta-pill day-delta"
+              *ngIf="c.changePct !== null"
+              [class.delta-positive]="c.changePct >= 0"
+              [class.delta-negative]="c.changePct < 0"
+            >{{ formatPct(c.changePct) }}</span>
+          </div>
+
+          <div class="grid-cell grand-total-cell total-col">
+            <div class="day-value">{{ formatCount(d.monthTotal) }}</div>
+            <div class="day-lm">
+              {{ d.lastMonthTotal !== null ? (d.lastMonthLabel + ': ' + formatCount(d.lastMonthTotal)) : 'No baseline' }}
+            </div>
+            <span
+              class="delta-pill day-delta"
+              *ngIf="d.monthChangePct !== null"
+              [class.delta-positive]="d.monthChangePct >= 0"
+              [class.delta-negative]="d.monthChangePct < 0"
+            >{{ formatPct(d.monthChangePct) }}</span>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </mat-card>
+</div>

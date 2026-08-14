@@ -1,0 +1,117 @@
+<div class="forecast-page">
+  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+    <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
+      <mat-label>Store</mat-label>
+      <mat-select formControlName="scope">
+        <mat-option *ngFor="let s of stores" [value]="s.value">{{ s.label }}</mat-option>
+      </mat-select>
+    </mat-form-field>
+
+    <div class="view-block">
+      <span class="view-label">View</span>
+      <mat-button-toggle-group formControlName="view" class="view-toggle">
+        <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="date-range-block">
+      <span class="view-label">Date Range</span>
+      <button type="button" class="date-range-btn" (click)="picker.open()">
+        <span class="date-range-main">{{
+          filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
+        }}</span>
+        <span class="date-range-sub">{{ data?.selectedRangeLabel }}</span>
+        <mat-icon class="date-range-icon">calendar_today</mat-icon>
+      </button>
+      <input
+        class="date-range-input"
+        matInput
+        [matDatepicker]="picker"
+        formControlName="date"
+      />
+      <mat-datepicker
+        #picker
+        [startView]="usesMonthPicker ? 'year' : 'month'"
+        (monthSelected)="onMonthSelected($event, picker)"
+      ></mat-datepicker>
+    </div>
+
+    <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">
+      Apply
+    </button>
+  </mat-card>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading forecast data...</span>
+  </div>
+
+  <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <mat-card class="xros-card forecast-card" *ngIf="data as d">
+    <div class="forecast-header-row">
+      <span class="section-tag">PREDICTIVE ENGINE</span>
+      <span class="confidence-badge">{{ d.confidenceLabel }}</span>
+    </div>
+
+    <div class="forecast-title">Next 30 days forecast</div>
+    <div class="forecast-subtitle">
+      Forecast starts from the day after the selected filter range, so planners can move from actual traffic into
+      the next decision window.
+    </div>
+
+    <div class="forecast-stat-row">
+      <div class="stat-tile">
+        <div class="stat-label">30 DAY FORECAST</div>
+        <div class="stat-value">{{ d.totalForecast | number }}</div>
+        <div class="stat-sub">Predicted visitors</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">DAILY AVERAGE</div>
+        <div class="stat-value">{{ d.dailyAverage | number }}</div>
+        <div class="stat-sub">Visitors per day</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">PEAK FORECAST DAY</div>
+        <div class="stat-value">{{ d.peakForecastDay.dayLabel }}</div>
+        <div class="stat-sub">{{ d.peakForecastDay.value | number }} visitors</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-label">SCENARIO DAYS</div>
+        <div class="stat-value">{{ d.scenarioDays }}</div>
+        <div class="stat-sub">Holiday, weekend or payday</div>
+      </div>
+    </div>
+
+    <div class="forecast-info-row">
+      <span class="info-pill">History used: {{ d.historyDays }} days</span>
+      <span class="info-pill">{{ d.historyRangeLabel }}</span>
+      <span class="info-pill">Forecast anchor: {{ d.forecastAnchorLabel }}</span>
+    </div>
+
+    <div class="forecast-list">
+      <div class="forecast-row" *ngFor="let day of d.days">
+        <div class="forecast-date-col">
+          <div class="forecast-date-main">{{ day.dayLabel }}</div>
+          <div class="forecast-date-sub">{{ day.weekdayLabel }}</div>
+        </div>
+
+        <div class="forecast-bar-col">
+          <div class="forecast-bar-track">
+            <div class="forecast-bar-fill" [style.width.%]="barWidth(day.predicted)"></div>
+          </div>
+        </div>
+
+        <div class="forecast-value-col">
+          <div class="forecast-value-main">{{ day.predicted | number }}</div>
+          <div class="forecast-value-sub">{{ day.low | number }} - {{ day.high | number }}</div>
+        </div>
+
+        <div class="forecast-tag-col">
+          <span class="tag-pill" [class]="'tag-' + day.tag">{{ day.tagLabel }}</span>
+          <div class="forecast-peak-sub">Peak {{ day.peakTime }}</div>
+        </div>
+      </div>
+    </div>
+  </mat-card>
+</div>

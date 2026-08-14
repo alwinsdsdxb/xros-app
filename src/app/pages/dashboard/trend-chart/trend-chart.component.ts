@@ -1,13 +1,10 @@
 import { Component, Input, OnChanges } from '@angular/core';
 import * as Highcharts from 'highcharts';
-import { TrendPoint } from '../../../core/models/dashboard.model';
 
-type TrendSeriesKey = 'passerBy' | 'totalFootfall' | 'uniqueFootfall';
-
-interface SeriesMeta {
-  key: TrendSeriesKey;
+export interface TrafficTrendSeries {
   label: string;
   color: string;
+  points: { time: string; value: number }[];
 }
 
 @Component({
@@ -16,25 +13,20 @@ interface SeriesMeta {
   styleUrl: './trend-chart.component.scss'
 })
 export class TrendChartComponent implements OnChanges {
-  @Input() trend: TrendPoint[] = [];
+  @Input() series: TrafficTrendSeries[] = [];
 
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};
   private chartRef: Highcharts.Chart | undefined;
 
-  readonly seriesMeta: SeriesMeta[] = [
-    { key: 'passerBy', label: 'Passer By', color: '#2a78d6' },
-    { key: 'totalFootfall', label: 'Total Footfall', color: '#eb6834' },
-    { key: 'uniqueFootfall', label: 'Unique Footfall', color: '#1baf7a' }
-  ];
-
-  seriesVisibility: Record<TrendSeriesKey, boolean> = {
-    passerBy: true,
-    totalFootfall: true,
-    uniqueFootfall: true
-  };
+  seriesVisibility: Record<string, boolean> = {};
 
   ngOnChanges(): void {
+    for (const s of this.series) {
+      if (!(s.label in this.seriesVisibility)) {
+        this.seriesVisibility[s.label] = true;
+      }
+    }
     this.buildChart();
   }
 
@@ -42,48 +34,64 @@ export class TrendChartComponent implements OnChanges {
     this.chartRef = chart;
   }
 
-  toggleSeries(key: TrendSeriesKey): void {
-    this.seriesVisibility[key] = !this.seriesVisibility[key];
-    const index = this.seriesMeta.findIndex((s) => s.key === key);
-    const series = this.chartRef?.series?.[index];
-    if (series) {
-      series.setVisible(this.seriesVisibility[key], true);
+  toggleSeries(label: string): void {
+    this.seriesVisibility[label] = !this.seriesVisibility[label];
+    const index = this.series.findIndex((s) => s.label === label);
+    const chartSeries = this.chartRef?.series?.[index];
+    if (chartSeries) {
+      chartSeries.setVisible(this.seriesVisibility[label], true);
     }
   }
 
+  rangeStart = '';
+  rangeMid = '';
+  rangeEnd = '';
+
   private buildChart(): void {
-    const categories = this.trend.map((t) => t.time);
-    const tickInterval = Math.max(1, Math.floor(categories.length / 12));
+    // A series can legitimately come back with no points (e.g. no readings for
+    // this store/date) — categories must come from whichever series actually has
+    // data, not blindly from the first one.
+    const richestSeries = this.series.reduce<TrafficTrendSeries | null>(
+      (best, current) => (!best || current.points.length > best.points.length ? current : best),
+      null
+    );
+    const categories = richestSeries?.points.map((p) => p.time) ?? [];
+    const tickInterval = Math.max(1, Math.round(categories.length / 8));
+
+    this.rangeStart = categories[0] ?? '';
+    this.rangeMid = categories[Math.floor((categories.length - 1) / 2)] ?? '';
+    this.rangeEnd = categories[categories.length - 1] ?? '';
 
     this.chartOptions = {
-      chart: { type: 'line', backgroundColor: 'transparent', height: 260 },
+      chart: { type: 'spline', backgroundColor: 'transparent', height: 320 },
       title: { text: undefined },
       credits: { enabled: false },
       xAxis: {
         categories,
         tickInterval,
-        lineColor: '#c3c2b7',
-        labels: { style: { color: '#898781', fontSize: '11px' } }
+        lineColor: '#e6eaec',
+        tickColor: '#e6eaec',
+        labels: { style: { color: '#78909c', fontSize: '11px' } }
       },
       yAxis: {
         title: { text: undefined },
-        gridLineColor: '#e1e0d9',
-        labels: { style: { color: '#898781' } }
+        gridLineColor: '#eef1f5',
+        labels: { style: { color: '#78909c', fontSize: '11px' } }
       },
       legend: { enabled: false },
       tooltip: { shared: true },
       plotOptions: {
-        line: {
-          marker: { enabled: false },
-          lineWidth: 2
+        spline: {
+          marker: { enabled: true, radius: 3, symbol: 'circle', lineWidth: 0 },
+          lineWidth: 2.5
         }
       },
-      series: this.seriesMeta.map((meta) => ({
-        type: 'line' as const,
-        name: meta.label,
-        color: meta.color,
-        visible: this.seriesVisibility[meta.key],
-        data: this.trend.map((t) => t[meta.key])
+      series: this.series.map((s) => ({
+        type: 'spline' as const,
+        name: s.label,
+        color: s.color,
+        visible: this.seriesVisibility[s.label] ?? true,
+        data: s.points.map((p) => p.value)
       }))
     };
   }
