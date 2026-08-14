@@ -80,7 +80,13 @@
         <div class="grid-week-row" *ngFor="let week of d.weeks">
           <div class="grid-cell week-label-cell week-col">{{ week.label }}</div>
 
-          <div class="grid-cell day-cell" *ngFor="let day of week.days" [class.out-month]="!day.inMonth">
+          <div
+            class="grid-cell day-cell"
+            *ngFor="let day of week.days"
+            [class.out-month]="!day.inMonth"
+            [class.clickable]="day.inMonth && day.value !== null"
+            (click)="openHourlyDetail(day)"
+          >
             <div class="day-number">{{ day.day }}</div>
             <ng-container *ngIf="day.inMonth">
               <div class="day-value">{{ formatCount(day.value) }}</div>
@@ -136,4 +142,56 @@
       </div>
     </ng-container>
   </mat-card>
+
+  <div class="hourly-modal-backdrop" *ngIf="hourlyModal" (click)="closeHourlyDetail()">
+    <div class="hourly-modal" (click)="$event.stopPropagation()">
+      <div class="hourly-modal-header">
+        <span class="hourly-tag">Hourly Detail</span>
+        <button type="button" class="hourly-close-btn" (click)="closeHourlyDetail()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      <div class="hourly-modal-date-row">
+        <div>
+          <div class="hourly-modal-date">{{ hourlyModal.dateLabel }}</div>
+          <div class="hourly-modal-range">{{ hourlyModal.rangeLabel }}</div>
+        </div>
+
+        <div class="hourly-range-toggle" *ngIf="!hourlyLoading && !hourlyError">
+          <button
+            type="button"
+            class="hourly-range-btn"
+            [class.active]="!hourlyShowAll24"
+            (click)="toggleHourlyRange(false)"
+          >8 – 23</button>
+          <button
+            type="button"
+            class="hourly-range-btn"
+            [class.active]="hourlyShowAll24"
+            (click)="toggleHourlyRange(true)"
+          >24 Hours</button>
+        </div>
+      </div>
+
+      <div class="hourly-loading-row" *ngIf="hourlyLoading">
+        <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+        <span>Loading hourly detail...</span>
+      </div>
+
+      <div class="hourly-error-row" *ngIf="hourlyError && !hourlyLoading">{{ hourlyError }}</div>
+
+      <div class="hourly-rows" *ngIf="!hourlyLoading && !hourlyError">
+        <div class="hourly-row" *ngFor="let r of hourlyModal.rows">
+          <div class="hourly-time">{{ r.label }}</div>
+          <div class="hourly-track">
+            <div class="hourly-fill" [style.width.%]="r.pct" [style.background]="r.color">
+              <span class="hourly-fill-value">{{ r.value }}</span>
+            </div>
+          </div>
+          <div class="hourly-total">{{ r.value | number }} visitors</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

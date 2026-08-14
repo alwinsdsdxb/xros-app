@@ -16,6 +16,27 @@ import {
 const CALENDAR_WIDGET_TITLE = 'Calendar';
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_OF_HISTORY = 12;
+const HOURLY_OPERATIONAL_START = 8;
+
+const HOURLY_COLOR_STOPS: { stop: number; rgb: [number, number, number] }[] = [
+  { stop: 0, rgb: [47, 111, 167] },
+  { stop: 0.28, rgb: [227, 167, 60] },
+  { stop: 0.55, rgb: [214, 88, 45] },
+  { stop: 1, rgb: [192, 57, 43] }
+];
+
+export interface HourlyDetailRow {
+  label: string;
+  value: number;
+  pct: number;
+  color: string;
+}
+
+export interface HourlyDetailModel {
+  dateLabel: string;
+  rangeLabel: string;
+  rows: HourlyDetailRow[];
+}
 
 @Component({
   selector: 'app-calendar-panel',
@@ -31,10 +52,16 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   loading = false;
   errorMessage = '';
 
+  hourlyModal: HourlyDetailModel | null = null;
+  hourlyLoading = false;
+  hourlyError = '';
+  hourlyShowAll24 = false;
+
   viewDate = this.startOfMonth(new Date());
 
   private group: DashboardGroup | null = null;
   private widget: Widget | null = null;
+  private hourlyRawRows: { hour: number; value: number }[] = [];
 
   constructor(
     private authService: AuthService,
@@ -73,6 +100,120 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
 
   formatCount(value: number | null): string {
     return value === null ? '—' : value.toLocaleString('en-US');
+  }
+
+  openHourlyDetail(day: CalendarDayCell): void {
+    if (!day.inMonth || day.value === null) {
+      return;
+    }
+
+    const date = this.parseDdMmYyyy(day.date);
+    if (!date || !this.widget || !this.group) {
+      return;
+    }
+
+    this.hourlyRawRows = [];
+    this.hourlyError = '';
+    this.hourlyLoading = true;
+    this.hourlyModal = {
+      dateLabel: date.toLocaleDateString('en-US', { weekday: 'long', day: '2-digit', month: 'short', year: 'numeric' }),
+      rangeLabel: this.hourlyRangeLabel(),
+      rows: []
+    };
+
+    const dayKey = this.formatDate(date);
+    const from = `${dayKey} 00:00:00`;
+    const to = `${dayKey} 23:59:59`;
+    // calendarConfig.segregateDate is what actually drives hour-vs-day
+    // bucketing on the backend (confirmed by comparing two dashboards' live
+    // captures - one widget stored "hour" and returned 24 points for a
+    // single-day range, another stored "dayOfMonth" and collapsed the same
+    // range to one point). The widget's own stored value reflects how it's
+    // configured for the month grid, not this drill-down, so it's forced to
+    // "hour" here regardless of what the widget document holds.
+    const hourlyWidget: Widget = {
+      ...this.widget,
+      calendarConfig: { ...(this.widget.calendarConfig as object), segregateDate: 'hour' }
+    };
+    const payload = buildKpiDataPayload(hourlyWidget, this.group, from, to);
+
+    this.kpiService.postKpiData(payload).subscribe({
+      next: (res) => {
+        const today = res.data.dataFilter.find((f) => f.selected) ?? res.data.dataFilter[0];
+        this.hourlyRawRows = (today?.data ?? []).map((p) => ({
+          hour: this.extractHour(p.date ?? ''),
+          value: p.value ?? 0
+        }));
+        this.hourlyLoading = false;
+        this.rebuildHourlyRows();
+      },
+      error: () => {
+        this.hourlyLoading = false;
+        this.hourlyError = 'Unable to load hourly detail. Please check the API connection and try again.';
+      }
+    });
+  }
+
+  toggleHourlyRange(showAll: boolean): void {
+    this.hourlyShowAll24 = showAll;
+    this.rebuildHourlyRows();
+  }
+
+  closeHourlyDetail(): void {
+    this.hourlyModal = null;
+    this.hourlyRawRows = [];
+    this.hourlyError = '';
+    this.hourlyLoading = false;
+  }
+
+  private rebuildHourlyRows(): void {
+    if (!this.hourlyModal) {
+      return;
+    }
+
+    const rows = this.hourlyShowAll24
+      ? this.hourlyRawRows
+      : this.hourlyRawRows.filter((r) => r.hour >= HOURLY_OPERATIONAL_START);
+    const maxValue = Math.max(...rows.map((r) => r.value), 1);
+
+    this.hourlyModal = {
+      ...this.hourlyModal,
+      rangeLabel: this.hourlyRangeLabel(),
+      rows: rows.map((r) => ({
+        label: `${r.hour.toString().padStart(2, '0')}:00`,
+        value: r.value,
+        pct: (r.value / maxValue) * 100,
+        color: this.hourlyColorFor(r.value / maxValue)
+      }))
+    };
+  }
+
+  private hourlyRangeLabel(): string {
+    return this.hourlyShowAll24 ? '00:00 to 23:00' : `${HOURLY_OPERATIONAL_START}:00 to 23:00`;
+  }
+
+  private extractHour(dateStr: string): number {
+    const time = dateStr.split(' ')[1] ?? '00:00';
+    return parseInt(time.split(':')[0], 10) || 0;
+  }
+
+  private hourlyColorFor(t: number): string {
+    const clamped = Math.max(0, Math.min(1, t));
+    let lower = HOURLY_COLOR_STOPS[0];
+    let upper = HOURLY_COLOR_STOPS[HOURLY_COLOR_STOPS.length - 1];
+
+    for (let i = 0; i < HOURLY_COLOR_STOPS.length - 1; i++) {
+      if (clamped >= HOURLY_COLOR_STOPS[i].stop && clamped <= HOURLY_COLOR_STOPS[i + 1].stop) {
+        lower = HOURLY_COLOR_STOPS[i];
+        upper = HOURLY_COLOR_STOPS[i + 1];
+        break;
+      }
+    }
+
+    const span = upper.stop - lower.stop || 1;
+    const localT = (clamped - lower.stop) / span;
+    const rgb = lower.rgb.map((channel, i) => Math.round(channel + (upper.rgb[i] - channel) * localT));
+    return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
   }
 
   formatPct(pct: number | null): string {
