@@ -22,6 +22,7 @@ import { KpiDataFilterResult } from '../../core/models/kpi.model';
 import { DashboardGroup, DashboardSummary, EventListItem, StoreListItem, Widget } from '../../core/models/widget.model';
 import { TrafficTrendSeries } from './trend-chart/trend-chart.component';
 import { FunnelStageData } from './flow-funnel-chart/flow-funnel-chart.component';
+import { environment } from '../../../environments/environment';
 
 const TOTAL_FOOTFALL_WIDGET_TITLE = 'Total Footfall';
 const UNIQUE_FOOTFALL_WIDGET_TITLE = 'Unique Footfall';
@@ -141,6 +142,7 @@ export class DashboardComponent implements OnInit {
 
   dashboards: DashboardSummary[] = [];
   currentDashboardId: string | null = null;
+  readonly fixedDashboardId = environment.fixedDashboardId;
 
   readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
 
@@ -226,7 +228,7 @@ export class DashboardComponent implements OnInit {
   }
 
   private resolveDefaultDashboardId(): Observable<string | undefined> {
-    const defaultDashboardId = this.authService.currentUser?.defaultDashboard;
+    const defaultDashboardId = this.fixedDashboardId || this.authService.currentUser?.defaultDashboard;
     return defaultDashboardId ? of(defaultDashboardId) : this.widgetService.getDashboards().pipe(map((dashboards) => dashboards[0]?._id));
   }
 

@@ -69,6 +69,7 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   @Input() dashboardId: string | null = null;
   @Input() dashboards: DashboardSummary[] = [];
   @Output() dashboardChange = new EventEmitter<string>();
+  readonly fixedDashboardId = environment.fixedDashboardId;
 
   filterForm: FormGroup;
   loading = false;

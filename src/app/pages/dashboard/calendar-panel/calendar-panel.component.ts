@@ -5,6 +5,7 @@ import { KpiService, buildKpiDataPayload } from '../../../core/services/kpi.serv
 import { WidgetService } from '../../../core/services/widget.service';
 import { DashboardGroup, DashboardSummary, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
+import { environment } from '../../../../environments/environment';
 import {
   CalendarAvailableMonth,
   CalendarColumnTotal,
@@ -47,6 +48,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   @Input() dashboardId: string | null = null;
   @Input() dashboards: DashboardSummary[] = [];
   @Output() dashboardChange = new EventEmitter<string>();
+  readonly fixedDashboardId = environment.fixedDashboardId;
 
   data: CalendarResponse | null = null;
   loading = false;

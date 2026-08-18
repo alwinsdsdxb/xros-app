@@ -2,7 +2,7 @@
   <mat-card class="xros-card calendar-card">
     <div class="calendar-nav-row">
       <div class="nav-controls">
-        <div class="nav-dashboard-select" *ngIf="dashboards.length > 1">
+        <div class="nav-dashboard-select" *ngIf="!fixedDashboardId && dashboards.length > 1">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
             <mat-select [value]="dashboardId" (selectionChange)="dashboardChange.emit($event.value)">
               <mat-option *ngFor="let d of dashboards" [value]="d._id">{{ d.dashboardName }}</mat-option>

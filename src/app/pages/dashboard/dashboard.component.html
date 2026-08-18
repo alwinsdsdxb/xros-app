@@ -15,7 +15,7 @@
 
   <ng-container *ngIf="activeTab === 'dashboard'">
   <div class="filter-bar" [formGroup]="filterForm">
-    <div class="filter-box" *ngIf="dashboards.length > 1">
+    <div class="filter-box" *ngIf="!fixedDashboardId && dashboards.length > 1">
       <span class="filter-caption">Dashboard</span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
         <mat-select [value]="currentDashboardId" (selectionChange)="onDashboardChange($event.value)">
