@@ -236,9 +236,9 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
             );
           }
 
-          const scopedStoreIds = this.scopedStoreIds();
+          const footfallStoreIds = new Set(this.footfallGroup?.stores ?? []);
           this.storeOptions = stores
-            .filter((s) => scopedStoreIds.includes(s._id))
+            .filter((s) => footfallStoreIds.has(s._id))
             .map((s) => ({ value: s._id, label: s.storeName }));
 
           this.campaignEvents = events;
@@ -255,22 +255,14 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
       });
   }
 
-  // Instore Analytics and Zone Visualizations are two separately-configured
-  // widget groups that may scope to different stores - the Store filter (and
-  // Active Campaigns, which has no dedicated widget of its own) covers the
-  // union of both so switching stores never silently drops one panel's data.
-  private scopedStoreIds(): string[] {
-    return Array.from(new Set([...(this.group?.stores ?? []), ...(this.zoneGroup?.stores ?? [])]));
-  }
-
   // "Active Campaigns" has no dedicated widget/endpoint - real marketing
-  // campaigns are stored as Event documents (GET /event/list), scoped to this
-  // page's own group stores, same approach as the main Dashboard tab.
+  // campaigns are stored as Event documents (GET /event/list), scoped to the
+  // Footfall Analysis group's stores, same approach as the main Dashboard tab.
   // Date-range scoping (e.g. only this year's campaigns when View is "Year")
   // happens in the shared app-active-campaigns-panel via campaignsRangeFrom/
   // campaignsRangeTo (set in fetch()) - this just scopes by store.
   private refreshActiveCampaigns(): void {
-    const storeIds = new Set(this.scopedStoreIds());
+    const storeIds = new Set(this.footfallGroup?.stores ?? []);
 
     this.campaignsForPanel = this.campaignEvents
       .filter((e) => e.storeId.some((id) => storeIds.has(id)))

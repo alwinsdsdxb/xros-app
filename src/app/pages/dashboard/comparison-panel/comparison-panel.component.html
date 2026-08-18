@@ -146,7 +146,6 @@
           <div class="periodic-title">Periodic Analysis</div>
           <div class="periodic-sub">Day, month-to-date, and year-to-date variance report</div>
         </div>
-        <button type="button" class="customize-btn">Customize Widget</button>
       </div>
 
       <div class="periodic-table-scroll">
@@ -185,10 +184,8 @@
                 <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
                   {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
                 </td>
-                <td class="num-cell">
-                  <span class="delta-pill" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
-                    {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
-                  </span>
+                <td class="num-cell" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
+                  {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
                 </td>
               </ng-container>
             </tr>
@@ -202,10 +199,8 @@
                 <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
                   {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
                 </td>
-                <td class="num-cell">
-                  <span class="delta-pill" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
-                    {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
-                  </span>
+                <td class="num-cell" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
+                  {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
                 </td>
               </ng-container>
             </tr>
