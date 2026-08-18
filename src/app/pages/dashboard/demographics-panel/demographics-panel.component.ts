@@ -55,12 +55,12 @@ export class DemographicsPanelComponent implements OnChanges {
       chart: { type: 'pie', backgroundColor: 'transparent', height: 220, spacing: [6, 6, 6, 6] },
       title: {
         text: g
-          ? `<span style="font-size:24px;font-weight:600;color:#263238">${(g.male + g.female).toLocaleString()}</span><br/><span style="font-size:10.5px;font-weight:600;color:#78909c;letter-spacing:0.04em">VISITORS</span>`
+          ? `<span style="font-size:24px;font-weight:600;color:#14273a">${(g.male + g.female).toLocaleString()}</span><br/><span style="font-size:10.5px;font-weight:600;color:#78909c;letter-spacing:0.04em">VISITORS</span>`
           : '',
         align: 'center',
         verticalAlign: 'middle',
         y: 6,
-        style: { color: '#263238' }
+        style: { color: '#14273a' }
       },
       credits: { enabled: false },
       tooltip: {

@@ -10,6 +10,7 @@ import { DashboardGroup, DashboardSummary, EventListItem, Widget } from '../../.
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
 import { CampaignEvent } from '../../../core/models/dashboard.model';
 import { StatTile } from '../../../core/models/instore-analytics.model';
+import { environment } from '../../../../environments/environment';
 
 const TOTAL_FOOTFALL_WIDGET_TITLE = 'Total Footfall';
 const TREND_REPORT_WIDGET_TITLE = 'Trend Report';
@@ -93,7 +94,7 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};
 
-  readonly views = ['Day', 'Week', 'Month', 'Year', 'Custom'];
+  readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
   readonly hoursOptions = [
     { value: 1, label: 'Operational' },
     { value: 0, label: '24 Hours' }
@@ -366,6 +367,9 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
         const { start, end } = this.filterForm.value.customRange ?? {};
         return { from: start ?? date, to: end ?? start ?? date };
       }
+      // 'Yesterday' is resolved to yesterday's actual Date in fetch() before
+      // it ever reaches here, so it rides the same single-day path as 'Day'.
+      case 'Yesterday':
       case 'Day':
       default:
         return { from: date, to: date };
@@ -399,6 +403,7 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
         const prevFrom = new Date(prevTo.getTime() - lengthMs);
         return { from: prevFrom, to: prevTo };
       }
+      case 'Yesterday':
       case 'Day':
       default: {
         const prev = new Date(date);
@@ -408,9 +413,15 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
     }
   }
 
+  private yesterday(): Date {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    return y;
+  }
+
   private fetch(): void {
-    const { date, view, store, operationalHours } = this.filterForm.value;
-    const d = typeof date === 'string' ? new Date(date) : date;
+    const { date: rawDate, view, store, operationalHours } = this.filterForm.value;
+    const d = view === 'Yesterday' ? this.yesterday() : typeof rawDate === 'string' ? new Date(rawDate) : rawDate;
     const { from, to } = this.getDateRange(view, d);
     const { from: prevFrom, to: prevTo } = this.getPreviousDateRange(view, d);
     this.campaignsRangeFrom = from;
@@ -477,8 +488,16 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
     const payload = buildKpiDataPayload(this.periodicAnalysisWidget, this.comparisonGroup, fromStr, toStr, undefined, undefined, undefined, operationalHours);
 
     this.kpiService.postKpiData(payload).subscribe({
-      next: (res) => console.log('[ComparisonPanel] TEMP DIAGNOSTIC - raw Periodic Analysis response:', JSON.stringify(res, null, 2)),
-      error: (err) => console.warn('[ComparisonPanel] TEMP DIAGNOSTIC - Periodic Analysis request failed:', err)
+      next: (res) => {
+        if (!environment.production) {
+          console.log('[ComparisonPanel] TEMP DIAGNOSTIC - raw Periodic Analysis response:', JSON.stringify(res, null, 2));
+        }
+      },
+      error: (err) => {
+        if (!environment.production) {
+          console.warn('[ComparisonPanel] TEMP DIAGNOSTIC - Periodic Analysis request failed:', err);
+        }
+      }
     });
   }
 
@@ -678,7 +697,7 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
         }
       },
       series: [
-        { type: 'column', name: 'Current Range', color: '#263238', data: buckets.map((b) => b.current) },
+        { type: 'column', name: 'Current Range', color: '#0f4c73', data: buckets.map((b) => b.current) },
         { type: 'column', name: 'Previous Range', color: '#7fa8cc', data: buckets.map((b) => b.previous) }
       ]
     };

@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
+import { MatDatepicker } from '@angular/material/datepicker';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Observable, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -60,7 +61,7 @@ const ENGAGEMENT_TIER_LABELS: Record<string, string> = {
 // dataFilter entry - see deriveTrendPasserByWidget).
 const TREND_SERIES_ORDER = ['Passer By', 'Total Footfall', 'Unique Footfall'];
 const TREND_SERIES_COLORS: Record<string, string> = {
-  'Passer By': '#263238',
+  'Passer By': '#0f4c73',
   'Total Footfall': '#a7b62e',
   'Unique Footfall': '#e3a73c'
 };
@@ -141,7 +142,7 @@ export class DashboardComponent implements OnInit {
   dashboards: DashboardSummary[] = [];
   currentDashboardId: string | null = null;
 
-  readonly views = ['Day', 'Week', 'Month', 'Year', 'Custom'];
+  readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
 
   readonly hoursOptions = [
     { value: 1, label: 'Operational' },
@@ -185,6 +186,18 @@ export class DashboardComponent implements OnInit {
     return this.filterForm.get('customRange') as FormGroup;
   }
 
+  get usesMonthPicker(): boolean {
+    const view = this.filterForm.value.view;
+    return view === 'Month' || view === 'Year';
+  }
+
+  // Only fires when the datepicker's startView is 'year' (Month/Year views
+  // above) and the user taps a month tile - same pattern as instore-analytics.
+  onMonthSelected(date: Date, datepicker: MatDatepicker<Date>): void {
+    this.filterForm.patchValue({ date });
+    datepicker.close();
+  }
+
   ngOnInit(): void {
     this.widgetService.getDashboards().subscribe((dashboards) => (this.dashboards = dashboards));
 
@@ -224,6 +237,12 @@ export class DashboardComponent implements OnInit {
   // picked in the customRange group, falling back to the selected day if
   // either end hasn't been picked yet (so an incomplete range never sends an
   // inverted/empty window to the API).
+  private yesterday(): Date {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    return y;
+  }
+
   private getDateRange(view: string, date: Date): { from: Date; to: Date } {
     switch (view) {
       case 'Week': {
@@ -248,6 +267,10 @@ export class DashboardComponent implements OnInit {
         const { start, end } = this.filterForm.value.customRange ?? {};
         return { from: start ?? date, to: end ?? start ?? date };
       }
+      // 'Yesterday' isn't a distinct range shape - fetch() resolves it to
+      // yesterday's actual Date before calling here, so it rides the same
+      // single-day path as 'Day'.
+      case 'Yesterday':
       case 'Day':
       default:
         return { from: date, to: date };
@@ -283,6 +306,7 @@ export class DashboardComponent implements OnInit {
         const prevFrom = new Date(prevTo.getTime() - lengthMs);
         return { from: prevFrom, to: prevTo };
       }
+      case 'Yesterday':
       case 'Day':
       default: {
         const prev = new Date(date);
@@ -464,8 +488,14 @@ export class DashboardComponent implements OnInit {
     };
   }
 
+  // 'Yesterday' is a quick-view, not a date the user actually picked - it
+  // always means "the day before today" regardless of whatever's left in the
+  // (hidden) date field, so it's resolved to a real Date here, once, before
+  // any of the range helpers below (which only know single-day/week/month/
+  // year/custom shapes) ever see it.
   private fetch(): void {
-    const { date, view, operationalHours } = this.filterForm.value;
+    const { date: rawDate, view, operationalHours } = this.filterForm.value;
+    const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(view, date);
     this.campaignsRangeFrom = from;
     this.campaignsRangeTo = to;
@@ -635,7 +665,7 @@ export class DashboardComponent implements OnInit {
     }
 
     const d = typeof date === 'string' ? new Date(date) : date;
-    const rangeView = view === 'Day' ? 'Month' : view;
+    const rangeView = view === 'Day' || view === 'Yesterday' ? 'Month' : view;
     const { from: rangeStart, to: rangeEnd } = this.getDateRange(rangeView, d);
     const from = `${this.formatDate(rangeStart)} 00:00:00`;
     const to = `${this.formatDate(rangeEnd)} 23:59:59`;
@@ -1212,7 +1242,7 @@ export class DashboardComponent implements OnInit {
     }
 
     const d = typeof date === 'string' ? new Date(date) : date;
-    const chartRangeView = view === 'Day' ? 'Month' : view;
+    const chartRangeView = view === 'Day' || view === 'Yesterday' ? 'Month' : view;
     const { from: chartStart, to: chartEnd } = this.getDateRange(chartRangeView, d);
     const { from: periodStart, to: periodEnd } = this.getDateRange(view, d);
     const { from: prevStart, to: prevEnd } = this.getPreviousDateRange(view, d);

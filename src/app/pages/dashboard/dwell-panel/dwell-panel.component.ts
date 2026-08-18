@@ -43,7 +43,7 @@ export class DwellPanelComponent implements OnChanges {
   trendChartOptions: Highcharts.Options = {};
   engagementLegend: EngagementLegendItem[] = [];
 
-  private readonly engagementPalette = ['#263238', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
+  private readonly engagementPalette = ['#0f4c73', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
 
   get tiles(): DwellTile[] {
     const d = this.dwell;
@@ -109,7 +109,7 @@ export class DwellPanelComponent implements OnChanges {
       legend: { enabled: false },
       plotOptions: {
         bar: {
-          color: '#263238',
+          color: '#0f4c73',
           borderRadius: 3,
           groupPadding: 0.18,
           dataLabels: { enabled: true, style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' } }
@@ -149,7 +149,7 @@ export class DwellPanelComponent implements OnChanges {
         align: 'center',
         verticalAlign: 'middle',
         y: 4,
-        style: { color: '#263238', fontSize: '22px', fontWeight: '600' }
+        style: { color: '#14273a', fontSize: '22px', fontWeight: '600' }
       },
       credits: { enabled: false },
       tooltip: { pointFormat: '{point.name}: <b>{point.y}</b> visits ({point.percentage:.1f}%)' },

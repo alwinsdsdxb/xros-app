@@ -8,7 +8,7 @@ body {
   margin: 0;
   font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;
   background: #f8fafb;
-  color: #263238;
+  color: #14273a;
 }
 
 * {
@@ -37,9 +37,9 @@ mat-icon.material-icons {
 
 :root {
   /* Brand */
-  --navy: #263238;
-  --navy-dark: #263238;
-  --navy-tint: rgba(38, 50, 56, 0.04);
+  --navy: #0f4c73;
+  --navy-dark: #0f4c73;
+  --navy-tint: rgba(15, 76, 115, 0.04);
 
   /* Data-viz / funnel palette (categorical, fixed order) */
   --series-1: #2f6fa7; /* blue */
@@ -53,7 +53,7 @@ mat-icon.material-icons {
 
   --chart-surface: #ffffff;
   --page-plane: #f8fafb;
-  --ink-primary: #263238;
+  --ink-primary: #14273a;
   --ink-secondary: #546e7a;
   --ink-muted: #78909c;
   --gridline: #e6eaec;

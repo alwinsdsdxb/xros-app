@@ -50,7 +50,7 @@
   align-items: flex-end;
   gap: 12px;
   flex-wrap: nowrap;
-  padding: 16px 20px !important;
+  padding: 0 !important;
 }
 
 // display:block (not flex) - a mat-form-field's outline notch measures itself
@@ -60,10 +60,11 @@
 .filter-box {
   display: block;
   flex: none;
+  position: relative;
   background: var(--page-plane, #f8fafb);
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
-  padding: 6px 10px;
+  padding: 10px 16px;
 }
 
 .filter-caption {
@@ -148,6 +149,50 @@
   height: 16px;
 }
 
+.date-range-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.date-range-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.date-range-main {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-primary);
+  white-space: nowrap;
+}
+
+.date-range-icon {
+  flex: none;
+  color: var(--ink-muted);
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
+}
+
+.date-range-sub {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3f7cad;
+  white-space: nowrap;
+}
+
 .view-toggle {
   flex: none;
 }
@@ -155,11 +200,13 @@
 .apply-btn {
   flex: none;
   margin-left: auto;
+  align-self: center;
 }
 
 .apply-btn {
   height: 34px;
-  background: var(--navy) !important;
+  padding: 0 24px !important;
+  background: linear-gradient(135deg, #196091, #0c3b5a) !important;
   color: #ffffff !important;
 }
 
@@ -190,14 +237,13 @@
 
 ::ng-deep .view-toggle .mat-button-toggle-checkbox-wrapper,
 ::ng-deep .hours-toggle .mat-button-toggle-checkbox-wrapper {
-  display: inline-flex;
-  align-items: center;
+  display: none;
 }
 
 ::ng-deep .view-toggle .mat-button-toggle-checked,
 ::ng-deep .hours-toggle .mat-button-toggle-checked {
-  background: var(--navy);
-  color: #ffffff;
+  background: var(--navy) !important;
+  color: #ffffff !important;
 }
 
 .loading-row {

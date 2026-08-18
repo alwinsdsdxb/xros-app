@@ -5,7 +5,7 @@ import 'highcharts/es-modules/masters/modules/exporting.src';
 import 'highcharts/es-modules/masters/modules/offline-exporting.src';
 import { PeakHours } from '../../../../core/models/instore-analytics.model';
 
-const DEFAULT_MAX_COLOR = '#263238';
+const DEFAULT_MAX_COLOR = '#0f4c73';
 
 @Component({
   selector: 'app-peak-hours-panel',
@@ -49,7 +49,7 @@ export class PeakHoursPanelComponent implements OnChanges {
           y: dayIdx,
           value,
           dataLabels: {
-            style: { color: value > max * 0.55 ? '#ffffff' : '#263238' }
+            style: { color: value > max * 0.55 ? '#ffffff' : '#14273a' }
           }
         }))
     );

@@ -30,7 +30,7 @@
   align-items: flex-end;
   gap: 12px;
   flex-wrap: nowrap;
-  padding: 16px 20px !important;
+  padding: 0 !important;
 }
 
 .filter-box {
@@ -39,7 +39,7 @@
   background: var(--page-plane, #f8fafb);
   border: 1px solid var(--border-hairline);
   border-radius: 20px;
-  padding: 6px 10px;
+  padding: 10px 16px;
   position: relative;
 }
 
@@ -124,57 +124,59 @@
 
 ::ng-deep .view-toggle .mat-button-toggle-checkbox-wrapper,
 ::ng-deep .hours-toggle .mat-button-toggle-checkbox-wrapper {
-  display: inline-flex;
-  align-items: center;
+  display: none;
 }
 
 ::ng-deep .view-toggle .mat-button-toggle-checked,
 ::ng-deep .hours-toggle .mat-button-toggle-checked {
-  background: var(--navy);
-  color: #ffffff;
+  background: var(--navy) !important;
+  color: #ffffff !important;
 }
 
 .date-range-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  height: 34px;
-  padding: 0 8px;
-  border: 1px solid var(--gridline);
-  border-radius: 6px;
-  background: #ffffff;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
   font-family: inherit;
 }
 
 .date-range-main {
-  font-size: 11px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--ink-primary);
   white-space: nowrap;
 }
 
 .date-range-sub {
-  font-size: 9px;
-  color: var(--ink-muted);
-  border-left: 1px solid var(--gridline);
-  padding-left: 4px;
-  margin-left: 0;
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3f7cad;
   white-space: nowrap;
 }
 
 .date-range-icon {
+  flex: none;
   color: var(--ink-muted);
-  font-size: 14px;
-  height: 14px;
-  width: 14px;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
 }
 
 .apply-btn {
   flex: none;
   margin-left: auto;
+  align-self: center;
   height: 34px;
-  background: var(--navy) !important;
+  padding: 0 24px !important;
+  background: linear-gradient(135deg, #196091, #0c3b5a) !important;
   color: #ffffff !important;
 }
 

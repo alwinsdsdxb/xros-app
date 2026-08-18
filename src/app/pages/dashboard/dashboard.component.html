@@ -14,7 +14,7 @@
   </div>
 
   <ng-container *ngIf="activeTab === 'dashboard'">
-  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+  <div class="filter-bar" [formGroup]="filterForm">
     <div class="filter-box" *ngIf="dashboards.length > 1">
       <span class="filter-caption">Dashboard</span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
@@ -35,18 +35,22 @@
 
     <div class="filter-box">
       <span class="filter-caption">View</span>
-      <mat-button-toggle-group formControlName="view" class="view-toggle">
+      <mat-button-toggle-group formControlName="view" class="view-toggle" [hideSingleSelectionIndicator]="true">
         <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
 
-    <div class="filter-box" *ngIf="filterForm.value.view !== 'Custom'">
-      <span class="filter-caption">Date</span>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field date-field">
-        <input matInput [matDatepicker]="picker" formControlName="date" />
-        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-      </mat-form-field>
+    <div class="filter-box" *ngIf="filterForm.value.view !== 'Custom' && filterForm.value.view !== 'Yesterday'">
+      <span class="filter-caption">Date Range</span>
+      <button type="button" class="date-range-btn" (click)="picker.open()">
+        <span class="date-range-main">{{
+          filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
+        }}</span>
+        <mat-icon class="date-range-icon">calendar_today</mat-icon>
+      </button>
+      <span class="date-range-sub">{{ campaignsRangeFrom | date: 'dd MMM y' }} to {{ campaignsRangeTo | date: 'dd MMM y' }}</span>
+      <input class="date-range-input" matInput [matDatepicker]="picker" formControlName="date" />
+      <mat-datepicker #picker [startView]="usesMonthPicker ? 'year' : 'month'" (monthSelected)="onMonthSelected($event, picker)"></mat-datepicker>
     </div>
 
     <div class="filter-box" *ngIf="filterForm.value.view === 'Custom'" [formGroup]="customRangeGroup">
@@ -63,7 +67,7 @@
 
     <div class="filter-box">
       <span class="filter-caption">Hours</span>
-      <mat-button-toggle-group formControlName="operationalHours" class="hours-toggle">
+      <mat-button-toggle-group formControlName="operationalHours" class="hours-toggle" [hideSingleSelectionIndicator]="true">
         <mat-button-toggle *ngFor="let h of hoursOptions" [value]="h.value">{{ h.label }}</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
@@ -71,7 +75,7 @@
     <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">
       Apply
     </button>
-  </mat-card>
+  </div>
 
   <div class="loading-row" *ngIf="loading">
     <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>

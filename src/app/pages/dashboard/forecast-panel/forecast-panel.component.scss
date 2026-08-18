@@ -12,7 +12,7 @@
   gap: 20px;
   flex-wrap: nowrap;
   overflow-x: auto;
-  padding: 14px 20px !important;
+  padding: 0 !important;
 }
 
 .store-field {
@@ -62,49 +62,53 @@
 }
 
 ::ng-deep .view-toggle .mat-button-toggle-checked {
-  background: var(--navy);
-  color: #ffffff;
+  background: var(--navy) !important;
+  color: #ffffff !important;
 }
 
 .date-range-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  height: 40px;
-  padding: 0 14px;
-  border: 1px solid var(--gridline);
-  border-radius: 8px;
-  background: #ffffff;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
   cursor: pointer;
   font-family: inherit;
 }
 
 .date-range-main {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 400;
   color: var(--ink-primary);
+  white-space: nowrap;
 }
 
 .date-range-sub {
-  font-size: 10.5px;
-  color: var(--ink-muted);
-  border-left: 1px solid var(--gridline);
-  padding-left: 8px;
-  margin-left: 2px;
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3f7cad;
+  white-space: nowrap;
 }
 
 .date-range-icon {
+  flex: none;
   color: var(--ink-muted);
-  font-size: 18px;
-  height: 18px;
-  width: 18px;
+  font-size: 16px;
+  height: 16px;
+  width: 16px;
 }
 
 .apply-btn {
   flex: none;
   margin-left: auto;
   height: 40px;
-  background: var(--navy) !important;
+  padding: 0 24px !important;
+  background: linear-gradient(135deg, #196091, #0c3b5a) !important;
   color: #ffffff !important;
 }
 

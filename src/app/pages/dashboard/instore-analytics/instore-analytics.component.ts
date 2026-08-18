@@ -8,6 +8,7 @@ import { WidgetService } from '../../../core/services/widget.service';
 import { DashboardGroup, DashboardSummary, EventListItem, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
 import { CampaignEvent } from '../../../core/models/dashboard.model';
+import { environment } from '../../../../environments/environment';
 import {
   AudienceMix,
   FloorPlanReport,
@@ -125,7 +126,7 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   private peakHoursRangeTo: string | null = null;
   private campaignEvents: EventListItem[] = [];
 
-  readonly views = ['Day', 'Week', 'Month', 'Year', 'Custom'];
+  readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
   readonly hoursOptions = [
     { value: 1, label: 'Operational' },
     { value: 0, label: '24 Hours' }
@@ -283,8 +284,19 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
       }));
   }
 
+  private yesterday(): Date {
+    const y = new Date();
+    y.setDate(y.getDate() - 1);
+    return y;
+  }
+
+  // 'Yesterday' is a quick-view, not a date the user actually picked - it
+  // always means "the day before today" regardless of whatever's in the date
+  // field, so it's resolved to a real Date here, once, before being handed to
+  // every sub-fetch below (each of which independently calls getDateRange).
   private fetch(): void {
-    const { date, view, store, operationalHours } = this.filterForm.value;
+    const { date: rawDate, view, store, operationalHours } = this.filterForm.value;
+    const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(date, view);
     this.campaignsRangeFrom = new Date(from);
     this.campaignsRangeTo = new Date(to);
@@ -320,6 +332,9 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         const end = new Date(d.getFullYear(), 11, 31);
         return { from: `${this.formatDate(start)} 00:00:00`, to: `${this.formatDate(end)} 23:59:59` };
       }
+      // 'Yesterday' is resolved to yesterday's actual Date in fetch() before
+      // it ever reaches here, so it rides the same single-day path as 'Day'.
+      case 'Yesterday':
       case 'Day':
       case 'Custom':
       default: {
@@ -391,10 +406,12 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
 
     this.kpiService.postKpiData(payload).subscribe({
       next: (res) => {
-        console.log(
-          '[InstoreAnalytics] TEMP DIAGNOSTIC - raw Funnel dataFilter (looking for an "Adult" entry):',
-          res.data.dataFilter.map((f) => ({ label: f.label, value: f.data?.[0]?.value }))
-        );
+        if (!environment.production) {
+          console.log(
+            '[InstoreAnalytics] TEMP DIAGNOSTIC - raw Funnel dataFilter (looking for an "Adult" entry):',
+            res.data.dataFilter.map((f) => ({ label: f.label, value: f.data?.[0]?.value }))
+          );
+        }
         const adultFilter = res.data.dataFilter.find((f) => (f.label.split('::').pop() || f.label).trim().toLowerCase() === 'adult');
         this.adultTotal = adultFilter?.data?.[0]?.value ?? null;
         this.refreshAudienceMix();
@@ -642,7 +659,9 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         // KpiDataPoint model/toFloorPlan() below simply never mapped, before
         // deciding whether the Metric Matrix table can show it. Remove once
         // confirmed either way.
-        console.log('[InstoreAnalytics] raw zoneAnalytics point keys:', res.data.dataFilter[0]?.data?.[0]);
+        if (!environment.production) {
+          console.log('[InstoreAnalytics] raw zoneAnalytics point keys:', res.data.dataFilter[0]?.data?.[0]);
+        }
         const zones = this.toZoneRows(res.data.dataFilter);
         this.floorPlanForPanel = this.toFloorPlan(res.data.dataFilter);
         this.deriveZoneAnalysis(zones);

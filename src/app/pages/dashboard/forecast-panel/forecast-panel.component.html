@@ -1,5 +1,5 @@
 <div class="forecast-page">
-  <mat-card class="xros-card filter-bar" [formGroup]="filterForm">
+  <div class="filter-bar" [formGroup]="filterForm">
     <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
       <mat-label>Store</mat-label>
       <mat-select formControlName="scope">
@@ -9,7 +9,7 @@
 
     <div class="view-block">
       <span class="view-label">View</span>
-      <mat-button-toggle-group formControlName="view" class="view-toggle">
+      <mat-button-toggle-group formControlName="view" class="view-toggle" [hideSingleSelectionIndicator]="true">
         <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
       </mat-button-toggle-group>
     </div>
@@ -20,9 +20,9 @@
         <span class="date-range-main">{{
           filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
         }}</span>
-        <span class="date-range-sub">{{ data?.selectedRangeLabel }}</span>
         <mat-icon class="date-range-icon">calendar_today</mat-icon>
       </button>
+      <span class="date-range-sub">{{ data?.selectedRangeLabel }}</span>
       <input
         class="date-range-input"
         matInput
@@ -39,7 +39,7 @@
     <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">
       Apply
     </button>
-  </mat-card>
+  </div>
 
   <div class="loading-row" *ngIf="loading">
     <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>

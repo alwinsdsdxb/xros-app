@@ -7,8 +7,8 @@
 }
 
 .sidebar {
-  width: 260px;
-  min-width: 260px;
+  width: 320px;
+  min-width: 320px;
   background: #ffffff;
   border: 1px solid var(--border-hairline, #e6eaec);
   border-radius: 35px;
@@ -58,20 +58,20 @@
 }
 
 .nav-chip {
-  margin: 3px 0;
-  border-radius: 8px;
+  margin: 6px 0;
+  border-radius: 14px;
   width: 100%;
   background: var(--page-plane, #f8fafb);
 }
 
 .nav-chip ::ng-deep .mdc-list-item__primary-text {
   color: var(--ink-secondary);
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .active-link {
-  background: var(--navy, #263238) !important;
+  background: var(--navy, #0f4c73) !important;
 }
 
 .active-link ::ng-deep .mdc-list-item__primary-text {
@@ -110,7 +110,7 @@
   width: 100%;
   height: 36px;
   background: var(--navy-tint, rgba(38, 50, 56, 0.04)) !important;
-  color: var(--navy, #263238) !important;
+  color: var(--navy, #0f4c73) !important;
   font-weight: 600;
 }
 

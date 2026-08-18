@@ -159,7 +159,7 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
           data: edges.map((e) => [e.from, e.to, e.weight]),
           nodes,
           dataLabels: {
-            style: { color: '#263238', textOutline: 'none', fontSize: '11px', fontWeight: '600' },
+            style: { color: '#14273a', textOutline: 'none', fontSize: '11px', fontWeight: '600' },
             distance: 12
           },
           linkOpacity: 0.55

@@ -18,7 +18,7 @@ export class ForecastPanelComponent implements OnInit {
   errorMessage = '';
 
   stores: { value: string; label: string }[] = [];
-  readonly views = ['Day', 'Week', 'Month', 'Year', 'Custom'];
+  readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
 
   constructor(
     private fb: FormBuilder,
