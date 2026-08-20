@@ -163,7 +163,7 @@ export class DashboardComponent implements OnInit {
     { value: 'dashboard', label: 'Dashboard', enabled: true },
     { value: 'instore', label: 'Instore Analytics', enabled: true },
     { value: 'calendar', label: 'Calendar', enabled: true },
-    { value: 'forecast', label: 'Forecast', enabled: true },
+    // Forecast tab hidden for the time being - re-add this entry to bring it back.
     { value: 'comparison', label: 'Comparison', enabled: true }
   ];
 
