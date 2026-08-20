@@ -4,7 +4,7 @@
   align-items: stretch;
   justify-content: center;
   gap: 24px;
-  background: var(--page-plane, #f8fafb);
+  background: #ecf1f7;
   padding: 48px 24px;
 }
 
@@ -30,38 +30,25 @@
 .brand-panel {
   display: flex;
   flex-direction: column;
+  justify-content: center;
 }
 
 .brand-logo {
   display: flex;
   align-items: center;
-  gap: 10px;
   margin: 24px 0 32px;
 }
 
-.brand-icon {
-  color: var(--navy, #0f4c73);
-  font-size: 30px;
-  height: 30px;
-  width: 30px;
-}
-
-.brand-name {
-  font-size: 17px;
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--ink-primary);
-}
-
-.brand-sub {
-  font-size: 11px;
-  color: var(--ink-secondary);
+.brand-logo-img {
+  display: block;
+  width: 260px;
+  height: auto;
 }
 
 .brand-headline {
-  font-size: 40px;
-  font-weight: 800;
-  line-height: 1.15;
+  font-size: 56px;
+  font-weight: 500;
+  line-height: 1.1;
   color: var(--ink-primary);
   margin: 0 0 16px;
 }
@@ -113,7 +100,7 @@
 }
 
 .form-panel {
-  background: #eef1f6;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,21 +121,24 @@
 
 .login-card {
   width: 100%;
-  max-width: 380px;
-  padding: 32px !important;
+  max-width: 460px;
+  padding: 44px !important;
   background: #ffffff;
   z-index: 1;
+  border-radius: 22px !important;
+  border: 1px solid var(--border-hairline, #e6eaec) !important;
+  box-shadow: 0 2px 8px rgba(20, 39, 58, 0.05) !important;
 }
 
 .login-title {
-  font-size: 20px;
+  font-size: 23px;
   font-weight: 700;
   margin: 12px 0 6px 0;
   color: var(--ink-primary);
 }
 
 .login-subtitle {
-  font-size: 13px;
+  font-size: 14.5px;
   color: var(--ink-secondary, #546e7a);
   margin: 0 0 20px 0;
 }
@@ -164,7 +154,7 @@
 
 ::ng-deep .login-card .mdc-text-field--filled:not(.mdc-text-field--disabled) {
   background-color: #eef1fb;
-  border-radius: 8px;
+  border-radius: 14px;
 }
 
 ::ng-deep .login-card .mdc-line-ripple::before,
@@ -173,17 +163,21 @@
 }
 
 .submit-btn {
-  height: 44px;
+  height: 48px;
   margin-top: 4px;
-  background: var(--navy, #0f4c73) !important;
+  background: linear-gradient(135deg, #1a5f8f, #0a2f4a) !important;
   color: #ffffff !important;
+  border-radius: 14px !important;
 }
 
 .forgot-btn {
-  height: 44px;
+  height: 48px;
   margin-top: 10px;
-  color: var(--navy, #0f4c73);
-  border-color: var(--gridline, #e6eaec);
+  background: #eef1f6 !important;
+  color: var(--ink-primary) !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 14px !important;
 }
 
 .error-message {
