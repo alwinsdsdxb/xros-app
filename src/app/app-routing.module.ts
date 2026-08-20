@@ -7,9 +7,10 @@ import { ComingSoonComponent } from './pages/coming-soon/coming-soon.component';
 import { MyRosterComponent } from './pages/my-roster/my-roster.component';
 import { ShellComponent } from './layout/shell/shell.component';
 import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 
 const routes: Routes = [
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
   {
     path: '',
     component: ShellComponent,

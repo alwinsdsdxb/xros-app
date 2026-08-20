@@ -53,7 +53,7 @@ export class LoginComponent implements OnInit {
       .login(email, password)
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
-        next: () => this.router.navigate(['/dashboard']),
+        next: () => this.router.navigate(['/dashboard'], { replaceUrl: true }),
         error: (err) => {
           if (err?.status === 401) {
             this.errorMessage = 'Invalid email or password.';
