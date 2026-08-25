@@ -101,6 +101,13 @@ export class DashboardComponent implements OnInit {
   campaignsRangeTo: Date | null = null;
   operationsForPanel: Operations | null = null;
 
+  // Snapshot of filterForm.value.operationalHours taken only when fetch()
+  // actually runs (initial load / Apply) - bound down to the other tabs'
+  // Hours-dependent widgets (see instore-analytics.component.ts's
+  // operationalHours @Input) so they update in step with this tab's own
+  // Apply button instead of live-tracking every toggle click before Apply.
+  appliedOperationalHours = 1;
+
   private footfallWidget: Widget | null = null;
   private passerByWidget: Widget | null = null;
   private rawPasserByMetric: KpiMetric | null = null;
@@ -497,6 +504,7 @@ export class DashboardComponent implements OnInit {
   // year/custom shapes) ever see it.
   private fetch(): void {
     const { date: rawDate, view, operationalHours } = this.filterForm.value;
+    this.appliedOperationalHours = operationalHours;
     const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(view, date);
     this.campaignsRangeFrom = from;

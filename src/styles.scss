@@ -4,6 +4,16 @@ body {
   height: 100%;
 }
 
+// The app's px-based layout was authored assuming an ~80% browser zoom
+// baseline - at real 100% zoom every panel reads oversized. This bakes that
+// baseline in so the UI matches on first load without the user manually
+// zooming out. Applied on `html` (not a wrapper transform) so it rescales
+// actual layout/viewport computation, keeping CDK overlays - which the CDK
+// appends to `<body>`, not inside `<app-root>` - aligned with the page.
+html {
+  zoom: 0.8;
+}
+
 body {
   margin: 0;
   font-family: 'Poppins', 'Helvetica Neue', Arial, sans-serif;

@@ -57,6 +57,9 @@
 // with height:100% against its nearest flex ancestor; nesting it inside a
 // flex-column wrapper creates a circular height dependency that Chromium
 // resolves by inflating the outline to ~170px. Block layout sidesteps it.
+// Colors/radius/padding match the Instore Analytics and Comparison tabs'
+// own .filter-box exactly, so all three tabs' filter rows read as one
+// consistent pill system.
 .filter-box {
   display: block;
   flex: none;
@@ -75,6 +78,15 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink-muted);
+}
+
+.filter-subtext {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-muted);
+  white-space: nowrap;
 }
 
 .filter-field {
@@ -111,6 +123,28 @@
 
 .scope-field {
   flex-basis: 100px;
+}
+
+// The Scope box has no visible input outline in the reference design - it
+// reads as plain bold text with a trailing chevron, sitting inside the
+// filter-box's own border. mat-select still drives the actual dropdown
+// behavior underneath; only its outline/notch is hidden.
+::ng-deep .scope-field .mdc-notched-outline {
+  display: none;
+}
+
+::ng-deep .scope-field .mat-mdc-text-field-wrapper {
+  padding: 0;
+}
+
+::ng-deep .scope-field .mat-mdc-select-value-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+::ng-deep .scope-field .mat-mdc-select-arrow {
+  color: var(--ink-muted);
 }
 
 .date-field {
@@ -201,15 +235,14 @@
   flex: none;
   margin-left: auto;
   align-self: center;
-}
-
-.apply-btn {
   height: 34px;
   padding: 0 24px !important;
   background: linear-gradient(135deg, #196091, #0c3b5a) !important;
   color: #ffffff !important;
 }
 
+// Bordered segmented toggle - same treatment as the Instore Analytics and
+// Comparison tabs' own view/hours toggles, so all three read as one system.
 ::ng-deep .view-toggle.mat-button-toggle-group,
 ::ng-deep .hours-toggle.mat-button-toggle-group {
   border-radius: 6px;

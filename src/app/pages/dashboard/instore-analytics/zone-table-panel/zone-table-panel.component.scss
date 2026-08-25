@@ -33,6 +33,25 @@
   color: #ffffff;
 }
 
+.zone-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.bulk-chip {
+  background: var(--page-plane, #f4f6f9);
+  font-weight: 700;
+}
+
+.zone-empty-state {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+  border: 1px dashed var(--gridline);
+  border-radius: 10px;
+}
+
 .chip-dot,
 .row-dot {
   width: 8px;
@@ -89,4 +108,51 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.comparison-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-hairline);
+}
+
+.comparison-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.comparison-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-primary);
+}
+
+.metric-toggle-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  background: var(--page-plane, #f4f6f9);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.metric-toggle {
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.metric-toggle.active {
+  background: var(--navy);
+  color: #ffffff;
 }

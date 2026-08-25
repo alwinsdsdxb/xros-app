@@ -8,6 +8,7 @@ export interface InstoreKpis {
   uniqueVisitors: StatTile;
   peakHour: StatTile;
   weekendAvg: StatTile;
+  weekdayAvg: StatTile;
 }
 
 export interface PeakHours {

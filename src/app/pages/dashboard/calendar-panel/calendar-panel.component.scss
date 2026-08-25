@@ -245,13 +245,25 @@
   font-weight: 700;
 }
 
-.day-cell {
+// Every value cell (day, week total, column total, grand total) shares this
+// exact structure: a fixed-height date row (empty where there's no date),
+// then value/LM/% at the same gap - so a 90px cell's content starts at the
+// same offset regardless of cell type, and a wide number like "8,428" next
+// to "0" never shifts anything below it (white-space: nowrap on the value/
+// LM lines, and a fixed-height delta slot whether or not that pill exists).
+.day-cell,
+.week-total-cell,
+.total-col-cell,
+.grand-total-cell {
   position: relative;
-  min-height: 90px;
-  background: #f8fbf8;
+  min-height: 96px;
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+
+.day-cell {
+  background: #f8fbf8;
 }
 
 .grid-week-row > .day-cell:nth-child(2),
@@ -271,78 +283,124 @@
   box-shadow: inset 0 0 0 2px var(--navy);
 }
 
+.cell-date-row {
+  height: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  flex: none;
+}
+
 .day-number {
-  position: absolute;
-  top: 8px;
-  left: 0;
-  right: 0;
-  text-align: center;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
   color: var(--ink-muted);
 }
 
 .day-value {
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.2;
   color: var(--ink-primary);
-  margin-top: 18px;
+  text-align: left;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 
-.day-lm {
+// LM and LY are structurally identical rows (label, value, change) so the
+// same zero-baseline rule and the same layout apply to both - one is never
+// missing a column the other one has.
+.comparison-row {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
   font-size: 10.5px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.comparison-label {
+  font-weight: 700;
+  color: var(--ink-muted);
+  flex: none;
+}
+
+.comparison-value {
+  color: var(--ink-secondary);
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// Neutral (gray) by default - only a real computed percentage, or genuine
+// growth from a zero base ("New"), is colored; "N/A" and "—" never are.
+.comparison-change {
+  margin-left: auto;
+  flex: none;
+  font-weight: 700;
   color: var(--ink-muted);
 }
 
-.day-delta {
-  align-self: flex-start;
-  margin-top: 2px;
+.change-positive {
+  color: var(--delta-good);
+}
+
+.change-negative {
+  color: var(--delta-bad);
+}
+
+// Spans the full 9-track outer grid so the auto-placement cursor advances to
+// a fresh row afterwards (a partial-width item here would otherwise let the
+// next week's row-label cell get auto-placed into this same row instead of
+// starting its own). The inner track re-declares the exact same column
+// template as .calendar-grid so its lines line up with the day columns above
+// it, without needing to know the outer grid's actual pixel widths.
+.campaign-banner-row {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  padding: 1px 0 3px;
+}
+
+.campaign-banner-track {
+  display: grid;
+  grid-template-columns: 92px repeat(7, minmax(0, 1fr)) 132px;
+  gap: 1px;
+}
+
+.campaign-banner-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 15px;
+  margin: 0 2px;
+  border-radius: 50px;
+  background: #8f6fd1;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 8px;
 }
 
 .total-col {
   background: #9fc0d8;
 }
 
-.week-total-cell {
+.week-total-cell,
+.total-col-cell,
+.grand-total-cell {
   background: #9fc0d8;
-  min-height: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.week-total-cell .day-value {
-  margin-top: 0;
-}
-
-.total-col-cell {
-  background: #9fc0d8;
-  min-height: 74px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.total-col-cell .day-value {
-  margin-top: 0;
 }
 
 .grand-total-cell {
-  background: #9fc0d8;
   color: var(--ink-primary);
-  min-height: 74px;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
 }
 
 .grand-total-cell .day-value {
   color: var(--ink-primary);
-  margin-top: 0;
-}
-
-.grand-total-cell .day-lm {
-  color: var(--ink-muted);
 }
 
 @media (max-width: 1100px) {

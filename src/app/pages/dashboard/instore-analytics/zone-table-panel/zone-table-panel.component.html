@@ -1,18 +1,17 @@
 <mat-card class="xros-card zone-table-card">
   <span class="section-tag">ZONE FILTERS</span>
   <div class="page-section-title">Zone Data Visibility &amp; Ranked Analysis</div>
-  <p class="panel-subtitle">Ranked from the same Zone Heat & Flow Analysis data - filter visible zones to focus on specific retail areas.</p>
+  <p class="panel-subtitle">Ranked from the same Zone Heat & Flow Analysis data - select one or more zones to focus on and compare.</p>
 
   <div class="zone-chip-row">
-    <button type="button" class="zone-chip" [class.active]="selectedZoneKey === 'all'" (click)="selectZone('all')">
-      All Zones
-    </button>
+    <button type="button" class="zone-chip bulk-chip" (click)="selectAll()" [disabled]="allSelected">Select All</button>
+    <button type="button" class="zone-chip bulk-chip" (click)="clearAll()" [disabled]="selectedZoneKeys.size === 0">Clear All</button>
     <button
       type="button"
       class="zone-chip"
       *ngFor="let z of zones"
-      [class.active]="selectedZoneKey === z.key"
-      (click)="selectZone(z.key)"
+      [class.active]="isSelected(z.key)"
+      (click)="toggleZone(z.key)"
     >
       <span class="chip-dot" [style.background]="colorForZone(z.key)"></span>
       {{ z.label }}
@@ -42,7 +41,7 @@
     </div>
   </div>
 
-  <div class="zone-table">
+  <div class="zone-table" *ngIf="filteredZones.length; else emptyState">
     <div class="zone-table-header">
       <span>Zone</span>
       <span>Traffic</span>
@@ -67,5 +66,32 @@
         {{ z.sharePct }}%
       </span>
     </div>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="zone-empty-state">No zones selected - use the chips above or "Select All" to compare zones.</div>
+  </ng-template>
+
+  <div class="comparison-section" *ngIf="filteredZones.length > 1">
+    <div class="comparison-header">
+      <div class="comparison-title">Zone Comparison</div>
+      <div class="metric-toggle-row">
+        <button
+          type="button"
+          class="metric-toggle"
+          *ngFor="let m of metricOptions"
+          [class.active]="comparisonMetric === m.key"
+          (click)="setComparisonMetric(m.key)"
+        >
+          {{ m.label }}
+        </button>
+      </div>
+    </div>
+    <highcharts-chart
+      [Highcharts]="Highcharts"
+      [options]="comparisonChartOptions"
+      [oneToOne]="true"
+      style="display: block; width: 100%; height: 240px"
+    ></highcharts-chart>
   </div>
 </mat-card>

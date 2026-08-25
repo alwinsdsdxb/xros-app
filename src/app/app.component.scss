@@ -1,0 +1,44 @@
+// `zoom` (styles.scss) rescales percentage-based layout consistently, but
+// leaves `vh`/`vw` tied to the real, unzoomed viewport - so any full-page
+// layout built on 100vh (shell, login, forgot/reset-password) needs a real
+// height chain to fall back on instead. html/body already declare
+// height:100% (styles.scss); app-root is the next link since routed page
+// components render as its direct children.
+:host {
+  display: block;
+  height: 100%;
+}
+
+.route-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  z-index: 9999;
+  overflow: hidden;
+  background: rgba(15, 76, 115, 0.15);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    height: 100%;
+    width: 40%;
+    background: #0f4c73;
+    animation: route-progress-slide 1s ease-in-out infinite;
+  }
+}
+
+@keyframes route-progress-slide {
+  0% {
+    left: -40%;
+  }
+  50% {
+    left: 60%;
+  }
+  100% {
+    left: 100%;
+  }
+}

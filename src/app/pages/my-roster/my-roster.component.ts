@@ -1,4 +1,9 @@
 import { Component } from '@angular/core';
+import { CommonModule } from '@angular/common';
+
+import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
+import { MatButtonModule } from '@angular/material/button';
 
 interface RosterDay {
   label: string;
@@ -9,7 +14,9 @@ interface RosterDay {
 @Component({
   selector: 'app-my-roster',
   templateUrl: './my-roster.component.html',
-  styleUrl: './my-roster.component.scss'
+  styleUrl: './my-roster.component.scss',
+  standalone: true,
+  imports: [CommonModule, MatCardModule, MatIconModule, MatButtonModule]
 })
 export class MyRosterComponent {
   weekStart: Date;

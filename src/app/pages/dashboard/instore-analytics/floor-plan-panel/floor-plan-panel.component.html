@@ -5,24 +5,44 @@
     Zone overlays summarize traffic, visitor capture, dwell, and audience mix per area of the store.
   </p>
 
-  <div class="floor-plan-body">
-    <div class="floor-plan-canvas-wrap">
-      <canvas #canvas></canvas>
-      <div #tooltip class="floor-plan-tooltip"></div>
-      <div class="floor-plan-placeholder" *ngIf="!data?.image">No floor plan data available.</div>
+  <div class="floor-plan-legend" *ngIf="legend.length">
+    <span class="legend-title">Zones</span>
+    <div
+      class="legend-chip"
+      *ngFor="let item of legend"
+      [class.active]="highlightedZone === item.zone.zoneName"
+      (mouseenter)="setHighlight(item.zone.zoneName)"
+      (mouseleave)="setHighlight(null)"
+      (click)="setHighlight(item.zone.zoneName)"
+    >
+      <span class="legend-swatch" [style.background]="item.fill"></span>
+      <span class="legend-name">{{ item.zone.zoneName }}</span>
+    </div>
+  </div>
+
+  <div class="floor-plan-viewport" #viewport [class.is-fullscreen]="isFullscreen">
+    <div class="floor-plan-toolbar">
+      <button type="button" class="toolbar-btn" (click)="zoomOut()" [disabled]="zoomLevel <= minZoom" aria-label="Zoom out">
+        <mat-icon>remove</mat-icon>
+      </button>
+      <span class="toolbar-zoom-level">{{ zoomLevel * 100 | number: '1.0-0' }}%</span>
+      <button type="button" class="toolbar-btn" (click)="zoomIn()" [disabled]="zoomLevel >= maxZoom" aria-label="Zoom in">
+        <mat-icon>add</mat-icon>
+      </button>
+      <span class="toolbar-divider"></span>
+      <button type="button" class="toolbar-btn" (click)="resetView()" aria-label="Reset view">
+        <mat-icon>restart_alt</mat-icon>
+      </button>
+      <button type="button" class="toolbar-btn" (click)="toggleFullscreen()" aria-label="Toggle full screen">
+        <mat-icon>{{ isFullscreen ? 'fullscreen_exit' : 'fullscreen' }}</mat-icon>
+      </button>
     </div>
 
-    <div class="floor-plan-legend" *ngIf="legend.length">
-      <div class="legend-title">Zones</div>
-      <div
-        class="legend-row"
-        *ngFor="let item of legend"
-        [class.active]="highlightedZone === item.zone.zoneName"
-        (mouseenter)="setHighlight(item.zone.zoneName)"
-        (mouseleave)="setHighlight(null)"
-      >
-        <span class="legend-swatch" [style.background]="item.fill"></span>
-        <span class="legend-name">{{ item.zone.zoneName }}</span>
+    <div class="floor-plan-stage" [class.is-zoomed]="zoomLevel > 1">
+      <div class="floor-plan-canvas-wrap" [style.transform]="'scale(' + zoomLevel + ')'">
+        <canvas #canvas></canvas>
+        <div #tooltip class="floor-plan-tooltip"></div>
+        <div class="floor-plan-placeholder" *ngIf="!data?.image">No floor plan data available.</div>
       </div>
     </div>
   </div>

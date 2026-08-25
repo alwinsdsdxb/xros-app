@@ -31,6 +31,7 @@
           <mat-option *ngFor="let s of scopes" [value]="s.value">{{ s.label }}</mat-option>
         </mat-select>
       </mat-form-field>
+      <span class="filter-subtext">Combined traffic view</span>
     </div>
 
     <div class="filter-box">
@@ -154,6 +155,7 @@
     [hidden]="activeTab !== 'instore'"
     [dashboardId]="currentDashboardId"
     [dashboards]="dashboards"
+    [operationalHours]="appliedOperationalHours"
     (dashboardChange)="onDashboardChange($event)"
   ></app-instore-analytics>
 
@@ -162,6 +164,7 @@
     [hidden]="activeTab !== 'calendar'"
     [dashboardId]="currentDashboardId"
     [dashboards]="dashboards"
+    [campaigns]="campaignsForPanel"
     (dashboardChange)="onDashboardChange($event)"
   ></app-calendar-panel>
 

@@ -92,6 +92,8 @@ export class DwellPanelComponent implements OnChanges {
 
   private buildDistributionChart(): void {
     const buckets = [...(this.dwell?.distribution ?? [])].reverse();
+    const total = buckets.reduce((sum, b) => sum + b.value, 0);
+    const toPct = (value: number) => (total > 0 ? Math.round((value / total) * 100) : 0);
 
     this.distributionChartOptions = {
       chart: { type: 'bar', backgroundColor: 'transparent', height: 220 },
@@ -104,22 +106,24 @@ export class DwellPanelComponent implements OnChanges {
       yAxis: {
         title: { text: undefined },
         gridLineColor: '#e6eaec',
-        labels: { style: { color: '#78909c' } }
+        labels: { style: { color: '#78909c' }, format: '{value}%' },
+        max: 100
       },
       legend: { enabled: false },
+      tooltip: { pointFormat: '<b>{point.y}%</b> of visitors' },
       plotOptions: {
         bar: {
           color: '#0f4c73',
           borderRadius: 3,
           groupPadding: 0.18,
-          dataLabels: { enabled: true, style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' } }
+          dataLabels: { enabled: true, format: '{y}%', style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' } }
         }
       },
       series: [
         {
           type: 'bar',
           name: 'Visitors',
-          data: buckets.map((b) => b.value)
+          data: buckets.map((b) => toPct(b.value))
         }
       ]
     };

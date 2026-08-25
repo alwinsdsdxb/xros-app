@@ -23,7 +23,7 @@
         <span class="section-tag">CALENDAR</span>
         <div class="nav-month">{{ data?.monthLabel }}</div>
         <div class="nav-sub" *ngIf="data">
-          LM = {{ data.lastMonthLabel }} for month, week, weekday, and daily comparisons.
+          LM = {{ data.lastMonthLabel }}, LY = {{ data.lastYearLabel }} for month, week, weekday, and daily comparisons.
         </div>
       </div>
 
@@ -59,8 +59,12 @@
 
         <div class="summary-tile">
           <div class="stat-label">Vs Last Month</div>
-          <div class="stat-value">{{ d.monthChangePct !== null ? formatPct(d.monthChangePct) : '—' }}</div>
-          <span class="section-tag inline-tag">{{ d.monthChangePct !== null ? 'Comparison trend' : 'No baseline' }}</span>
+          <div
+            class="stat-value"
+            [class.change-positive]="isPositiveChange(d.lmChange)"
+            [class.change-negative]="isNegativeChange(d.lmChange)"
+          >{{ changeLabel(d.lmChange) }}</div>
+          <span class="section-tag inline-tag">{{ d.lmChange.status !== 'na' ? 'Comparison trend' : 'No baseline' }}</span>
         </div>
 
         <div class="summary-tile">
@@ -87,28 +91,61 @@
             [class.clickable]="day.inMonth && day.value !== null"
             (click)="openHourlyDetail(day)"
           >
-            <div class="day-number">{{ day.day }}</div>
+            <div class="cell-date-row">
+              <span class="day-number">{{ day.day }}</span>
+            </div>
             <ng-container *ngIf="day.inMonth">
               <div class="day-value">{{ formatCount(day.value) }}</div>
-              <div class="day-lm">{{ day.lmValue !== null ? ('LM ' + formatCount(day.lmValue)) : 'No baseline' }}</div>
-              <span
-                class="delta-pill day-delta"
-                *ngIf="day.changePct !== null"
-                [class.delta-positive]="day.changePct >= 0"
-                [class.delta-negative]="day.changePct < 0"
-              >{{ formatPct(day.changePct) }}</span>
+              <div class="comparison-row day-lm">
+                <span class="comparison-label">LM</span>
+                <span class="comparison-value">{{ day.lmValue !== null ? formatCount(day.lmValue) : '—' }}</span>
+                <span
+                  class="comparison-change"
+                  [class.change-positive]="isPositiveChange(day.lmChange)"
+                  [class.change-negative]="isNegativeChange(day.lmChange)"
+                >{{ changeLabel(day.lmChange) }}</span>
+              </div>
+              <div class="comparison-row day-ly">
+                <span class="comparison-label">LY</span>
+                <span class="comparison-value">{{ day.lyValue !== null ? formatCount(day.lyValue) : '—' }}</span>
+                <span
+                  class="comparison-change"
+                  [class.change-positive]="isPositiveChange(day.lyChange)"
+                  [class.change-negative]="isNegativeChange(day.lyChange)"
+                >{{ changeLabel(day.lyChange) }}</span>
+              </div>
             </ng-container>
           </div>
 
           <div class="grid-cell week-total-cell total-col">
+            <div class="cell-date-row"></div>
             <div class="day-value">{{ formatCount(week.total) }}</div>
-            <div class="day-lm">{{ week.lmTotal !== null ? ('LM ' + formatCount(week.lmTotal)) : 'No baseline' }}</div>
-            <span
-              class="delta-pill day-delta"
-              *ngIf="week.changePct !== null"
-              [class.delta-positive]="week.changePct >= 0"
-              [class.delta-negative]="week.changePct < 0"
-            >{{ formatPct(week.changePct) }}</span>
+            <div class="comparison-row day-lm">
+              <span class="comparison-label">LM</span>
+              <span class="comparison-value">{{ week.lmTotal !== null ? formatCount(week.lmTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(week.lmChange)"
+                [class.change-negative]="isNegativeChange(week.lmChange)"
+              >{{ changeLabel(week.lmChange) }}</span>
+            </div>
+            <div class="comparison-row day-ly">
+              <span class="comparison-label">LY</span>
+              <span class="comparison-value">{{ week.lyTotal !== null ? formatCount(week.lyTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(week.lyChange)"
+                [class.change-negative]="isNegativeChange(week.lyChange)"
+              >{{ changeLabel(week.lyChange) }}</span>
+            </div>
+          </div>
+
+          <div class="campaign-banner-row" *ngFor="let banner of week.banners">
+            <div class="campaign-banner-track">
+              <div class="campaign-banner-pill" [style.grid-column]="banner.startCol + ' / ' + banner.endCol">
+                {{ banner.label }}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -116,27 +153,49 @@
           <div class="grid-cell total-label-cell week-col">Total</div>
 
           <div class="grid-cell total-col-cell" *ngFor="let c of d.columnTotals">
+            <div class="cell-date-row"></div>
             <div class="day-value">{{ formatCount(c.total) }}</div>
-            <div class="day-lm">{{ c.lmTotal !== null ? ('LM ' + formatCount(c.lmTotal)) : 'No baseline' }}</div>
-            <span
-              class="delta-pill day-delta"
-              *ngIf="c.changePct !== null"
-              [class.delta-positive]="c.changePct >= 0"
-              [class.delta-negative]="c.changePct < 0"
-            >{{ formatPct(c.changePct) }}</span>
+            <div class="comparison-row day-lm">
+              <span class="comparison-label">LM</span>
+              <span class="comparison-value">{{ c.lmTotal !== null ? formatCount(c.lmTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(c.lmChange)"
+                [class.change-negative]="isNegativeChange(c.lmChange)"
+              >{{ changeLabel(c.lmChange) }}</span>
+            </div>
+            <div class="comparison-row day-ly">
+              <span class="comparison-label">LY</span>
+              <span class="comparison-value">{{ c.lyTotal !== null ? formatCount(c.lyTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(c.lyChange)"
+                [class.change-negative]="isNegativeChange(c.lyChange)"
+              >{{ changeLabel(c.lyChange) }}</span>
+            </div>
           </div>
 
           <div class="grid-cell grand-total-cell total-col">
+            <div class="cell-date-row"></div>
             <div class="day-value">{{ formatCount(d.monthTotal) }}</div>
-            <div class="day-lm">
-              {{ d.lastMonthTotal !== null ? (d.lastMonthLabel + ': ' + formatCount(d.lastMonthTotal)) : 'No baseline' }}
+            <div class="comparison-row day-lm">
+              <span class="comparison-label">LM</span>
+              <span class="comparison-value">{{ d.lastMonthTotal !== null ? formatCount(d.lastMonthTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(d.lmChange)"
+                [class.change-negative]="isNegativeChange(d.lmChange)"
+              >{{ changeLabel(d.lmChange) }}</span>
             </div>
-            <span
-              class="delta-pill day-delta"
-              *ngIf="d.monthChangePct !== null"
-              [class.delta-positive]="d.monthChangePct >= 0"
-              [class.delta-negative]="d.monthChangePct < 0"
-            >{{ formatPct(d.monthChangePct) }}</span>
+            <div class="comparison-row day-ly">
+              <span class="comparison-label">LY</span>
+              <span class="comparison-value">{{ d.lastYearTotal !== null ? formatCount(d.lastYearTotal) : '—' }}</span>
+              <span
+                class="comparison-change"
+                [class.change-positive]="isPositiveChange(d.lyChange)"
+                [class.change-negative]="isNegativeChange(d.lyChange)"
+              >{{ changeLabel(d.lyChange) }}</span>
+            </div>
           </div>
         </div>
       </div>

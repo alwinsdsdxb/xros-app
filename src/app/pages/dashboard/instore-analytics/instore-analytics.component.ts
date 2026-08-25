@@ -68,6 +68,11 @@ const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, h) => `${h.toString().padS
 export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   @Input() dashboardId: string | null = null;
   @Input() dashboards: DashboardSummary[] = [];
+  // Initial/default value only - see dashboard.component.ts's
+  // appliedOperationalHours. This tab keeps its own Hours toggle (below) so
+  // it can still be changed independently, but it's re-synced to match
+  // whenever the main Dashboard tab's own Hours setting changes (ngOnChanges).
+  @Input() operationalHours = 1;
   @Output() dashboardChange = new EventEmitter<string>();
   readonly fixedDashboardId = environment.fixedDashboardId;
 
@@ -121,6 +126,7 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   private adultTotal: number | null = null;
   private kpiRangeDays = 0;
   private kpiWeekendDays = 0;
+  private kpiWeekdayDays = 0;
   // Date range of the last Peak Hours fetch - reused by refreshTrafficSignals()
   // to count how many real calendar days of each weekday fall in range.
   private peakHoursRangeFrom: string | null = null;
@@ -148,12 +154,20 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.filterForm.patchValue({ operationalHours: this.operationalHours }, { emitEvent: false });
     this.resolveWidgets();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['dashboardId'] && !changes['dashboardId'].firstChange) {
       this.resolveWidgets();
+    }
+    // Re-syncs this tab's own Hours toggle to match whenever the main
+    // Dashboard tab's Hours setting changes, so they stay in step - but the
+    // toggle here can still be changed independently in between.
+    if (changes['operationalHours'] && !changes['operationalHours'].firstChange) {
+      this.filterForm.patchValue({ operationalHours: this.operationalHours }, { emitEvent: false });
+      this.fetch();
     }
   }
 
@@ -544,6 +558,7 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
     const { from, to } = this.getDateRange(date, view);
     this.kpiRangeDays = this.countDaysInclusive(from, to);
     this.kpiWeekendDays = this.countWeekendDaysInclusive(from, to);
+    this.kpiWeekdayDays = this.kpiRangeDays - this.kpiWeekendDays;
 
     forkJoin({
       footfall: this.fetchKpiCurrentValue(this.footfallWidget, from, to, operationalHours),
@@ -589,13 +604,20 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
     const peakHour: StatTile = this.peakHoursForPanel ? this.peakHoursForPanel.bestSlot : { value: '—', sub: 'No data' };
 
     let weekendAvg: StatTile = { value: '—', sub: 'No data' };
-    if (this.peakHoursForPanel && this.kpiWeekendDays > 0) {
+    let weekdayAvg: StatTile = { value: '—', sub: 'No data' };
+    if (this.peakHoursForPanel) {
       const grid = this.peakHoursForPanel.grid;
-      const weekendTotal = this.gridRowTotal(grid[0]) + this.gridRowTotal(grid[6]);
-      weekendAvg = { value: Math.round(weekendTotal / this.kpiWeekendDays), sub: 'Sat/Sun avg over range' };
+      if (this.kpiWeekendDays > 0) {
+        const weekendTotal = this.gridRowTotal(grid[0]) + this.gridRowTotal(grid[6]);
+        weekendAvg = { value: Math.round(weekendTotal / this.kpiWeekendDays), sub: 'Sat/Sun avg over range' };
+      }
+      if (this.kpiWeekdayDays > 0) {
+        const weekdayTotal = [1, 2, 3, 4, 5].reduce((sum, dayIdx) => sum + this.gridRowTotal(grid[dayIdx]), 0);
+        weekdayAvg = { value: Math.round(weekdayTotal / this.kpiWeekdayDays), sub: 'Mon-Fri avg over range' };
+      }
     }
 
-    this.kpisForPanel = { avgDailyFootfall, uniqueVisitors, peakHour, weekendAvg };
+    this.kpisForPanel = { avgDailyFootfall, uniqueVisitors, peakHour, weekendAvg, weekdayAvg };
   }
 
   private countDaysInclusive(from: string, to: string): number {

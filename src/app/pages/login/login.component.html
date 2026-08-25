@@ -64,6 +64,10 @@
           <mat-error *ngIf="form.get('password')?.hasError('required')">Password is required</mat-error>
         </mat-form-field>
 
+        <div class="remember-row">
+          <mat-checkbox formControlName="rememberMe" class="remember-checkbox">Remember me</mat-checkbox>
+        </div>
+
         <div class="error-message" *ngIf="errorMessage">{{ errorMessage }}</div>
 
         <button
@@ -80,8 +84,6 @@
         <button mat-flat-button type="button" class="full-width forgot-btn" (click)="forgotPassword()">
           Forgot password?
         </button>
-
-        <div class="info-message" *ngIf="infoMessage">{{ infoMessage }}</div>
       </form>
 
     </mat-card>

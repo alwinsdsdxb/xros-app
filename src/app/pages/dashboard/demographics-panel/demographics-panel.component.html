@@ -16,19 +16,16 @@
             <div class="legend-row">
               <span class="dot" style="background: #2f6fa7"></span>
               <span class="legend-name">Male</span>
-              <span class="legend-value">{{ d.gender.male | number }}</span>
               <span class="legend-pct">{{ d.gender.malePct }}%</span>
             </div>
             <div class="legend-row">
               <span class="dot" style="background: #e3a73c"></span>
               <span class="legend-name">Female</span>
-              <span class="legend-value">{{ d.gender.female | number }}</span>
               <span class="legend-pct">{{ d.gender.femalePct }}%</span>
             </div>
             <div class="legend-row">
               <span class="dot" style="background: #78909c"></span>
               <span class="legend-name">Other</span>
-              <span class="legend-value">{{ (d.gender.unknown ?? 0) | number }}</span>
               <span class="legend-pct">{{ d.gender.unknownPct ?? 0 }}%</span>
             </div>
           </div>
@@ -41,7 +38,6 @@
           <div class="group-size-row" *ngFor="let r of groupSizeRows">
             <mat-icon class="group-icon">{{ r.icon }}</mat-icon>
             <span class="group-label">{{ r.label }}</span>
-            <span class="group-value">{{ r.value | number }}</span>
             <span class="group-pct">{{ r.pct }}%</span>
           </div>
         </div>
@@ -61,7 +57,7 @@
           <span class="dot" [style.background]="a.color"></span>
           <div>
             <div class="age-stat-label">{{ a.label }}</div>
-            <div class="age-stat-value">{{ a.value | number }} <span class="age-stat-pct">{{ a.pct }}%</span></div>
+            <div class="age-stat-value">{{ a.pct }}%</div>
           </div>
         </div>
       </div>

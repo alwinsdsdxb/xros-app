@@ -1,6 +1,11 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
 .shell {
   display: flex;
-  height: 100vh;
+  height: 100%;
   background: var(--page-plane, #f8fafb);
   padding: 16px 50px 12px 50px;
   gap: 12px;
@@ -18,7 +23,11 @@
   flex-direction: column;
   position: sticky;
   top: 16px;
-  height: calc(100vh - 28px);
+  // No explicit height - stretches to match .content-area's height via flex's
+  // default align-items:stretch (both are items of the same .shell row). A
+  // fixed calc() here previously double-subtracted .shell's own vertical
+  // padding, since a flex item's percentage height resolves against the
+  // container's already-padding-reduced content box.
   overflow: hidden;
 }
 

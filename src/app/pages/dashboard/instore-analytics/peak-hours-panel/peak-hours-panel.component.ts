@@ -17,9 +17,19 @@ export class PeakHoursPanelComponent implements OnChanges {
 
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};
+  chartVisible = true;
+  chartHeight = 360;
 
   ngOnChanges(): void {
     this.buildChart();
+
+    // A filter change can alter the grid's shape (e.g. fewer/more hour
+    // columns when toggling Operational Hours), and Highcharts' oneToOne
+    // update merges new points onto old ones by index rather than replacing
+    // them, which left stale values on screen. Destroying and recreating the
+    // chart component guarantees a clean render for the new data.
+    this.chartVisible = false;
+    setTimeout(() => (this.chartVisible = true));
   }
 
   private buildChart(): void {
@@ -36,6 +46,7 @@ export class PeakHoursPanelComponent implements OnChanges {
     const rowHeight = days.length > 10 ? 22 : 40;
     const chartHeight = Math.max(360, days.length * rowHeight + 90);
     const legendHeight = Math.min(280, days.length * rowHeight);
+    this.chartHeight = chartHeight;
 
     // Only the day(s) actually present in the queried range get real values -
     // other rows stay null and are simply omitted from the heatmap's data
@@ -60,6 +71,7 @@ export class PeakHoursPanelComponent implements OnChanges {
       credits: { enabled: false },
       xAxis: {
         categories: hours,
+        title: { text: 'Hour of Day', style: { color: '#78909c', fontSize: '11px', fontWeight: '600' } },
         labels: { style: { color: '#78909c', fontSize: '11px' } }
       },
       yAxis: {

@@ -22,10 +22,20 @@ export class AuthService {
       tap((res) => {
         const token = res?.data?.token;
         if (token) {
-          localStorage.setItem(TOKEN_KEY, token);
+          // Remember me -> localStorage (survives browser restart). Unchecked
+          // -> sessionStorage (cleared when the tab/browser closes). Both
+          // storages are cleared first so a leftover session in the other
+          // one never lingers and gets picked up by getToken()/readStoredUser().
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(USER_KEY);
+          sessionStorage.removeItem(TOKEN_KEY);
+          sessionStorage.removeItem(USER_KEY);
+
+          const storage = rememberMe ? localStorage : sessionStorage;
+          storage.setItem(TOKEN_KEY, token);
           const user = this.decodeUserFromToken(token);
           if (user) {
-            localStorage.setItem(USER_KEY, JSON.stringify(user));
+            storage.setItem(USER_KEY, JSON.stringify(user));
           }
           this.currentUserSubject.next(user);
         }
@@ -33,14 +43,24 @@ export class AuthService {
     );
   }
 
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(token: string, password: string): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/auth/reset-password`, { password, token });
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(USER_KEY);
     this.currentUserSubject.next(null);
   }
 
   getToken(): string | null {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
   }
 
   isLoggedIn(): boolean {
@@ -52,7 +72,7 @@ export class AuthService {
   }
 
   private readStoredUser(): AuthUser | null {
-    const raw = localStorage.getItem(USER_KEY);
+    const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
     if (!raw) {
       return null;
     }
