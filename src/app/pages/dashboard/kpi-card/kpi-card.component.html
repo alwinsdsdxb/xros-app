@@ -26,6 +26,7 @@
           {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct | number: '1.0-0' }}%
         </span>
       </div>
+      <span class="comparison-date" *ngIf="c.dateLabel">{{ c.dateLabel }}</span>
     </div>
   </div>
 </mat-card>

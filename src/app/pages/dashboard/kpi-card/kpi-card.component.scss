@@ -30,8 +30,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 34px;
+  height: 34px;
   border-radius: 6px;
   background: var(--page-plane);
   flex: none;
@@ -39,9 +39,9 @@
 
 .kpi-icon {
   color: var(--ink-secondary);
-  font-size: 15px;
-  height: 15px;
-  width: 15px;
+  font-size: 20px;
+  height: 20px;
+  width: 20px;
 }
 
 .kpi-label {
@@ -97,15 +97,17 @@
   color: var(--ink-muted);
 }
 
-// Stacked (not side-by-side) so the delta pill always gets the box's full
-// width to lay out in - a narrow grid column (e.g. on smaller screens)
-// previously forced the value + pill onto one row, and the pill's text
-// (icon + sign + up to 2 decimals + "%") could exceed the box and spill
-// past its edge instead of wrapping.
+.comparison-date {
+  font-size: 9.5px;
+  color: var(--ink-muted);
+  opacity: 0.8;
+}
+
 .comparison-bottom {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 4px;
 }
 
@@ -114,10 +116,14 @@
   font-weight: 700;
   color: var(--ink-primary);
   font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .delta-pill {
-  max-width: 100%;
+  flex: none;
 }
 
 .change-arrow {

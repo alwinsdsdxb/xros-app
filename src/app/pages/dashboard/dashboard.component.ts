@@ -20,6 +20,7 @@ import {
   Operations
 } from '../../core/models/dashboard.model';
 import { KpiDataFilterResult } from '../../core/models/kpi.model';
+import { ComparisonDateLabels } from './kpi-card/kpi-card.component';
 import { DashboardGroup, DashboardSummary, EventListItem, StoreListItem, Widget } from '../../core/models/widget.model';
 import { TrafficTrendSeries } from './trend-chart/trend-chart.component';
 import { FunnelStageData } from './flow-funnel-chart/flow-funnel-chart.component';
@@ -116,6 +117,21 @@ export class DashboardComponent implements OnInit {
   // set pop in/out the instant the toggle was clicked, before Apply and
   // before the actual data caught up.
   appliedView = 'Month';
+
+  // Same snapshot pattern, for the date badge and the 4 KPI cards' own [date]
+  // input. This used to be a getter reading filterForm.value live, so
+  // clicking View toggles (e.g. Month -> Week) or picking a new date changed
+  // the displayed date/time on the badge and cards immediately, before Apply
+  // - even though the actual KPI/funnel data underneath hadn't been
+  // refetched yet. Computed once in fetch() instead, alongside appliedView.
+  displayDate = '';
+
+  // The actual calendar date/range behind each "Previous X" comparison box on
+  // the 4 KPI cards, handed down as a ComparisonDateLabels input. Computed
+  // once here (from the selected date only, not the view) since
+  // getPreviousDateRange('Day'/'Week'/'Month'/'Year', ...) is itself always
+  // relative to the selected date regardless of which view is active.
+  comparisonDateLabels: ComparisonDateLabels = { day: '', week: '', month: '', year: '' };
 
   private footfallWidget: Widget | null = null;
   private passerByWidget: Widget | null = null;
@@ -532,9 +548,10 @@ export class DashboardComponent implements OnInit {
   // any of the range helpers below (which only know single-day/week/month/
   // year/custom shapes) ever see it.
   private fetch(): void {
-    const { date: rawDate, view, operationalHours } = this.filterForm.value;
+    const { date: rawDate, view, customRange, operationalHours } = this.filterForm.value;
     this.appliedOperationalHours = operationalHours;
     this.appliedView = view;
+    this.displayDate = this.computeDisplayDate(rawDate, view, customRange);
     const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(view, date);
     this.campaignsRangeFrom = from;
@@ -546,6 +563,7 @@ export class DashboardComponent implements OnInit {
     const prevToStr = this.formatDate(prevTo);
 
     const selectedDate = typeof date === 'string' ? new Date(date) : date;
+    this.comparisonDateLabels = this.computeComparisonDateLabels(selectedDate);
     this.fetchKpi(this.footfallWidget, fromStr, toStr, selectedDate, operationalHours, (metric) => {
       this.footfallMetric = metric;
       this.refreshPasserByMetric();
@@ -1477,8 +1495,7 @@ export class DashboardComponent implements OnInit {
     return `${year}-${month}-${day}`;
   }
 
-  get displayDate(): string {
-    const { date, view, customRange } = this.filterForm?.value ?? {};
+  private computeDisplayDate(date: Date | string, view: string, customRange: { start: Date | null; end: Date | null } | undefined): string {
     if (!date) {
       return '';
     }
@@ -1502,5 +1519,20 @@ export class DashboardComponent implements OnInit {
       default:
         return fmt(from);
     }
+  }
+
+  private computeComparisonDateLabels(date: Date): ComparisonDateLabels {
+    const fmt = (d: Date) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+    const day = this.getPreviousDateRange('Day', date);
+    const week = this.getPreviousDateRange('Week', date);
+    const month = this.getPreviousDateRange('Month', date);
+    const year = this.getPreviousDateRange('Year', date);
+
+    return {
+      day: fmt(day.from),
+      week: `${fmt(week.from)} – ${fmt(week.to)}`,
+      month: month.from.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }),
+      year: `${year.from.getFullYear()}`
+    };
   }
 }
