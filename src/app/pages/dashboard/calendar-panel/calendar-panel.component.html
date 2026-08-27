@@ -40,6 +40,17 @@
       </div>
     </div>
 
+    <div class="metric-toggle">
+      <button
+        type="button"
+        *ngFor="let m of metricOptions"
+        class="metric-btn"
+        [class.active]="selectedMetric === m.value"
+        [disabled]="loading"
+        (click)="selectMetric(m.value)"
+      >{{ m.label }}</button>
+    </div>
+
     <div class="loading-row" *ngIf="loading">
       <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
       <span>Loading calendar data...</span>
@@ -68,9 +79,33 @@
         </div>
 
         <div class="summary-tile">
+          <div class="stat-label">Vs Last Year</div>
+          <div
+            class="stat-value"
+            [class.change-positive]="isPositiveChange(d.lyChange)"
+            [class.change-negative]="isNegativeChange(d.lyChange)"
+          >{{ changeLabel(d.lyChange) }}</div>
+          <div class="stat-sub">
+            {{ d.lastYearTotal !== null ? (d.lastYearLabel + ': ' + formatCount(d.lastYearTotal)) : 'No baseline' }}
+          </div>
+        </div>
+
+        <div class="summary-tile">
           <div class="stat-label">Best Week</div>
           <div class="stat-value">{{ d.bestWeek ? d.bestWeek.label : '—' }}</div>
           <div class="stat-sub">{{ d.bestWeek ? (formatCount(d.bestWeek.total) + ' visitors') : 'No data' }}</div>
+        </div>
+
+        <div class="summary-tile">
+          <div class="stat-label">Weekday Average</div>
+          <div class="stat-value">{{ formatCount(d.weekdayAvg) }}</div>
+          <div class="stat-sub">Mon-Fri avg / day</div>
+        </div>
+
+        <div class="summary-tile">
+          <div class="stat-label">Weekend Average</div>
+          <div class="stat-value">{{ formatCount(d.weekendAvg) }}</div>
+          <div class="stat-sub">Sat/Sun avg / day</div>
         </div>
       </div>
 
@@ -88,7 +123,7 @@
             class="grid-cell day-cell"
             *ngFor="let day of week.days"
             [class.out-month]="!day.inMonth"
-            [class.clickable]="day.inMonth && day.value !== null"
+            [class.clickable]="selectedMetric === 'footfall' && day.inMonth && day.value !== null"
             (click)="openHourlyDetail(day)"
           >
             <div class="cell-date-row">

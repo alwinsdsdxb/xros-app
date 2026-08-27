@@ -20,7 +20,7 @@
 
 .dwell-tile {
   padding: 12px 14px;
-  background: var(--page-plane);
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8fc 100%);
   border: 1px solid #cfd8dc;
   border-radius: 10px;
 }
@@ -50,6 +50,34 @@
 
 .tile-prev {
   color: var(--ink-muted);
+}
+
+.donut-wrap {
+  position: relative;
+}
+
+.donut-center-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.donut-center-value {
+  font-size: 22px;
+  font-weight: 600;
+  color: #14273a;
+  line-height: 1.2;
+}
+
+.donut-center-caption {
+  font-size: 11px;
+  font-weight: 400;
+  color: #14273a;
 }
 
 .distribution-block {

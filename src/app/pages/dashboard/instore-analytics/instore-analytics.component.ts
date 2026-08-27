@@ -88,6 +88,16 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   campaignsRangeTo: Date | null = null;
   storeOptions: { value: string; label: string }[] = [];
 
+  // "value: 'all'" always resolves to this same group's own single store
+  // (see fetchPeakHours/fetchZoneCorrelation/fetchFloorPlan: store === 'all'
+  // just omits storeIds, which falls back to the group's configured store) -
+  // there's no actual multi-store aggregation happening, so the option should
+  // read as that real store's name rather than the generic "All Stores".
+  // Only falls back to the generic label on a genuine multi-store group.
+  get allStoresLabel(): string {
+    return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Stores';
+  }
+
   // Ranked from the same real "Zone Analytics" widget data as floorPlanForPanel -
   // see deriveZoneAnalysis().
   zonesForPanel: ZoneRow[] = [];

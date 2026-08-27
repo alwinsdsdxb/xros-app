@@ -1,7 +1,7 @@
 import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
-import { KpiService, buildKpiDataPayload } from '../../../core/services/kpi.service';
+import { KpiService, buildKpiDataPayload, buildMultiStoreKpiPayload } from '../../../core/services/kpi.service';
 import { WidgetService } from '../../../core/services/widget.service';
 import { DashboardGroup, DashboardSummary, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
@@ -20,6 +20,46 @@ import {
 const NO_BASELINE: ChangeResult = { status: 'na', pct: null };
 
 const CALENDAR_WIDGET_TITLE = 'Calendar';
+const UNIQUE_FOOTFALL_WIDGET_TITLE = 'Unique Footfall';
+const MALE_WIDGET_TITLE = 'Male';
+const FEMALE_WIDGET_TITLE = 'Female';
+// Real day-wise widget for Unique Footfall - the same one the main Dashboard
+// tab's Traffic Trend chart uses (dashboard.component.ts's fetchTrafficTrend).
+// Its per-day granularity comes from the request's top-level timeFrame/
+// dateByFilter ('dayOfMonth'/'month'), and it's scoped per-entrance-store
+// rather than at the group level - see fetchUniqueFootfall() below.
+//
+// Male/Female have no equivalent trend-capable widget of their own (backend
+// confirmed - xpandretail-api's kpi-data pipeline buckets by day purely off
+// the request's own `timeFrame` field for ANY kpiId, not just footfall's -
+// see fetchGenderDaily()), so they reuse the exact same trick against the
+// plain single-total Male/Female widgets instead, single-store like every
+// other existing use of those widgets (fetchGenderSplit in
+// dashboard.component.ts), not per-entrance like Unique Footfall.
+const TREND_REPORT_WIDGET_TITLE = 'Trend Report';
+const ENTRANCE_CATEGORY_NAME = 'Entrance';
+
+// The Male/Female widgets' own stored dataFilter entries scope by
+// kpiGroupId (GENDER) with an empty kpiId, not a specific kpiId - fine for
+// their normal single-total 'box' fetch, but the backend resolves an empty
+// kpiId + a set kpiGroupId by expanding to EVERY kpiId in that group (both
+// Male and Female), so the per-day 'line' response silently interleaves both
+// genders' rows under the same dates with no per-point kpiId to tell them
+// apart - explaining why Female's day-sum came out higher than Total
+// Footfall. Forcing an explicit kpiId here (confirmed real IDs, from
+// xpandretail-api's src/common/import/enum/kpi.enum.ts - not guessed) skips
+// that group-expansion branch entirely, same fix pattern as PASSER_BY_KPI_ID
+// below in dashboard.component.ts. See fetchGenderDaily().
+const MALE_KPI_ID = '5ccff2f8b815e9357861f37e';
+const FEMALE_KPI_ID = '5ccff3f0b815e9357861f37f';
+
+export type CalendarMetric = 'footfall' | 'unique' | 'male' | 'female';
+
+export interface CalendarMetricOption {
+  value: CalendarMetric;
+  label: string;
+}
+
 const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_OF_HISTORY = 12;
 const HOURLY_OPERATIONAL_START = 8;
@@ -67,8 +107,22 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
 
   viewDate = this.startOfMonth(new Date());
 
+  readonly metricOptions: CalendarMetricOption[] = [
+    { value: 'footfall', label: 'Total Footfall' },
+    { value: 'unique', label: 'Unique Footfall' },
+    { value: 'male', label: 'Male' },
+    { value: 'female', label: 'Female' }
+  ];
+  selectedMetric: CalendarMetric = 'footfall';
+
   private group: DashboardGroup | null = null;
   private widget: Widget | null = null;
+  private footfallGroup: DashboardGroup | null = null;
+  private uniqueFootfallWidget: Widget | null = null;
+  private trendReportWidget: Widget | null = null;
+  private maleWidget: Widget | null = null;
+  private femaleWidget: Widget | null = null;
+  private entranceStoreIds: string[] = [];
   private hourlyRawRows: { hour: number; value: number }[] = [];
   private weekBounds: { start: Date; end: Date }[] = [];
 
@@ -110,12 +164,28 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     this.fetch();
   }
 
+  selectMetric(metric: CalendarMetric): void {
+    if (this.selectedMetric === metric) {
+      return;
+    }
+    this.selectedMetric = metric;
+    this.fetch();
+  }
+
   formatCount(value: number | null): string {
     return value === null ? '—' : value.toLocaleString('en-US');
   }
 
+  // Total Footfall only for now - the hour-level override below is only
+  // confirmed to work on the real "Calendar" widget (see the comment on the
+  // override itself). Unique Footfall's Trend Report widget gets its day-wise
+  // granularity a completely different way (top-level timeFrame, not
+  // calendarConfig), and whether it even supports an hour-level request at
+  // all hasn't been checked - so its day cells simply aren't clickable
+  // instead of guessing at a second unverified mechanism (see the template's
+  // [class.clickable]).
   openHourlyDetail(day: CalendarDayCell): void {
-    if (!day.inMonth || day.value === null) {
+    if (this.selectedMetric !== 'footfall' || !day.inMonth || day.value === null) {
       return;
     }
 
@@ -285,13 +355,32 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
         switchMap((dashboardId) => (dashboardId ? this.widgetService.getGroups(dashboardId) : of([]))),
         switchMap((groups) => {
           const group = groups.find((g) => g.groupName.trim() === CALENDAR_WIDGET_TITLE) ?? null;
+          // Same "first group by order" lookup dashboard.component.ts uses to
+          // find its Total/Unique Footfall KPI cards and Trend Report widget -
+          // Unique Footfall has no equivalent widget in the Calendar group.
+          const footfallGroup = [...groups].sort((a, b) => a.order - b.order)[0] ?? null;
           this.group = group;
-          return group ? this.widgetService.getWidgets(group._id) : of([] as Widget[]);
+          this.footfallGroup = footfallGroup;
+          return forkJoin({
+            calendarWidgets: group ? this.widgetService.getWidgets(group._id) : of([] as Widget[]),
+            footfallWidgets: footfallGroup ? this.widgetService.getWidgets(footfallGroup._id) : of([] as Widget[]),
+            stores: this.widgetService.getStores()
+          });
         })
       )
       .subscribe({
-        next: (widgets) => {
-          this.widget = widgets.find((w) => w.title.trim() === CALENDAR_WIDGET_TITLE) ?? null;
+        next: ({ calendarWidgets, footfallWidgets, stores }) => {
+          this.widget = calendarWidgets.find((w) => w.title.trim() === CALENDAR_WIDGET_TITLE) ?? null;
+          this.uniqueFootfallWidget = footfallWidgets.find((w) => w.title.trim() === UNIQUE_FOOTFALL_WIDGET_TITLE) ?? null;
+          this.trendReportWidget = footfallWidgets.find((w) => w.title.trim() === TREND_REPORT_WIDGET_TITLE) ?? null;
+          this.maleWidget = footfallWidgets.find((w) => w.title.trim() === MALE_WIDGET_TITLE) ?? null;
+          this.femaleWidget = footfallWidgets.find((w) => w.title.trim() === FEMALE_WIDGET_TITLE) ?? null;
+
+          const parentStoreId = this.footfallGroup?.stores[0];
+          this.entranceStoreIds = parentStoreId
+            ? stores.filter((s) => s.categoryName === ENTRANCE_CATEGORY_NAME && s.parentId.includes(parentStoreId)).map((s) => s._id)
+            : [];
+
           this.fetch();
         },
         error: () => {
@@ -301,16 +390,30 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   }
 
   private fetch(): void {
+    if (this.selectedMetric === 'unique') {
+      this.fetchUniqueFootfall();
+      return;
+    }
+    if (this.selectedMetric === 'male' || this.selectedMetric === 'female') {
+      this.fetchGenderDaily(this.selectedMetric);
+      return;
+    }
+    this.fetchCalendarWidget();
+  }
+
+  private fetchCalendarWidget(): void {
     if (!this.widget || !this.group) {
       this.data = null;
       return;
     }
+    const widget = this.widget;
+    const group = this.group;
 
     const monthStart = this.startOfMonth(this.viewDate);
     const monthEnd = this.endOfMonth(this.viewDate);
     const from = `${this.formatDate(monthStart)} 00:00:00`;
     const to = `${this.formatDate(monthEnd)} 23:59:59`;
-    const payload = buildKpiDataPayload(this.widget, this.group, from, to);
+    const payload = buildKpiDataPayload(widget, group, from, to);
 
     // Last year's same month has no compareConfig relationship to the
     // widget's own "PM" series - it's fetched as its own plain request
@@ -321,7 +424,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     const lastYearEnd = this.endOfMonth(lastYearStart);
     const lyFrom = `${this.formatDate(lastYearStart)} 00:00:00`;
     const lyTo = `${this.formatDate(lastYearEnd)} 23:59:59`;
-    const lyPayload = buildKpiDataPayload(this.widget, this.group, lyFrom, lyTo);
+    const lyPayload = buildKpiDataPayload(widget, group, lyFrom, lyTo);
 
     this.loading = true;
     this.errorMessage = '';
@@ -332,7 +435,8 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     }).subscribe({
       next: ({ current, lastYear }) => {
         this.loading = false;
-        this.data = this.toCalendarResponse(current.data.dataFilter, lastYear?.data.dataFilter ?? [], monthStart);
+        const { todayByDate, lmByDate, lyByDay } = this.mapsFromCalendarFilters(current.data.dataFilter, lastYear?.data.dataFilter ?? []);
+        this.data = this.toCalendarResponse(todayByDate, lmByDate, lyByDay, monthStart);
       },
       error: () => {
         this.loading = false;
@@ -341,21 +445,209 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     });
   }
 
+  // Unique Footfall has no Calendar-style widget of its own - it reuses the
+  // Trend Report widget the main Dashboard's Traffic Trend chart already gets
+  // real per-day values from (see dashboard.component.ts's fetchTrafficTrend).
+  // That widget doesn't bundle a "PM" comparison series the way the Calendar
+  // widget does, so LM/LY here are two extra explicit requests (same trick
+  // fetchCalendarWidget already uses for LY) rather than one bundled response.
+  private fetchUniqueFootfall(): void {
+    if (!this.trendReportWidget || !this.footfallGroup || !this.entranceStoreIds.length) {
+      this.data = null;
+      return;
+    }
+    const widget = this.trendReportWidget;
+    const group = this.footfallGroup;
+    const storeIds = this.entranceStoreIds;
+
+    const monthStart = this.startOfMonth(this.viewDate);
+    const monthEnd = this.endOfMonth(this.viewDate);
+    const lastMonthStart = this.addMonths(monthStart, -1);
+    const lastMonthEnd = this.endOfMonth(lastMonthStart);
+    const lastYearStart = this.addMonths(monthStart, -12);
+    const lastYearEnd = this.endOfMonth(lastYearStart);
+
+    const toRange = (start: Date, end: Date) => ({
+      from: `${this.formatDate(start)} 00:00:00`,
+      to: `${this.formatDate(end)} 23:59:59`
+    });
+    const fetchDaily = (range: { from: string; to: string }) =>
+      this.kpiService
+        .postKpiData(buildMultiStoreKpiPayload(widget, group, storeIds, range.from, range.to, 'dayOfMonth', 'month'))
+        .pipe(map((res) => this.sumUniqueFootfallByDay(res.data.dataFilter)));
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      todayByDate: fetchDaily(toRange(monthStart, monthEnd)),
+      lmByDate: fetchDaily(toRange(lastMonthStart, lastMonthEnd)).pipe(catchError(() => of(new Map<string, number>()))),
+      lyByDate: fetchDaily(toRange(lastYearStart, lastYearEnd)).pipe(catchError(() => of(new Map<string, number>())))
+    }).subscribe({
+      next: ({ todayByDate, lmByDate, lyByDate }) => {
+        this.loading = false;
+        const lyByDay = new Map<number, number>();
+        lyByDate.forEach((value, dateKey) => {
+          const day = this.parseDdMmYyyy(dateKey)?.getDate();
+          if (day) {
+            lyByDay.set(day, value);
+          }
+        });
+        this.data = this.toCalendarResponse(todayByDate, lmByDate, lyByDay, monthStart);
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Unable to load calendar data. Please check the API connection and try again.';
+      }
+    });
+  }
+
+  // Response has one line series per entrance store (e.g. "Lifestyle
+  // Entrance::Unique Footfall"), each broken into one point per day - same
+  // shape dashboard.component.ts's own sumByCalendarDay handles for the
+  // Traffic Trend chart. Summed across entrances per calendar day, keyed in
+  // the same DD-MM-YYYY format the Calendar widget's own response uses (via
+  // dateFrom, since this widget doesn't populate the Calendar-style `date`
+  // field) so it can flow through the same toCalendarResponse() as that path.
+  private sumUniqueFootfallByDay(filters: KpiDataFilterResult[]): Map<string, number> {
+    const byDate = new Map<string, number>();
+    for (const filter of filters) {
+      const label = filter.label.split('::').pop() || filter.label;
+      if (label !== UNIQUE_FOOTFALL_WIDGET_TITLE) {
+        continue;
+      }
+      for (const point of filter.data) {
+        if (!point.dateFrom) {
+          continue;
+        }
+        const key = this.formatDdMmYyyy(new Date(point.dateFrom));
+        byDate.set(key, (byDate.get(key) ?? 0) + (point.value ?? 0));
+      }
+    }
+    return byDate;
+  }
+
+  // Male/Female have no trend-capable widget of their own (see the const
+  // comment above) - reuses the plain single-total Male/Female widget already
+  // resolved for other tabs' gender-split displays, just with timeFrame
+  // forced to 'dayOfMonth' the same way fetchUniqueFootfall forces it on the
+  // Trend Report widget. Single-store (footfallGroup's own default), not
+  // per-entrance - matches how these two widgets are queried everywhere else
+  // in the app (dashboard.component.ts's fetchGenderCount).
+  private fetchGenderDaily(metric: 'male' | 'female'): void {
+    const rawWidget = metric === 'male' ? this.maleWidget : this.femaleWidget;
+    if (!rawWidget || !this.footfallGroup) {
+      this.data = null;
+      return;
+    }
+    const group = this.footfallGroup;
+    // Two separate backend quirks fixed here on top of the widget's own
+    // stored dataFilter:
+    // 1. fetchDataFor: 'box' (the widget's own stored value) takes a
+    //    different pipeline branch than 'line' - it drops the day-of-month
+    //    $group stage and collapses the whole requested range into ONE
+    //    summed point stamped near the range's start date (the "huge number
+    //    on day 1" bug). fetchDataFor is read per dataFilter entry, so
+    //    overriding it to 'line' here keeps the day grouping intact.
+    // 2. kpiId (the widget's own stored value is empty, scoped only by
+    //    kpiGroupId: GENDER) makes the backend expand to EVERY kpiId in that
+    //    group - both Male and Female - so per-day sums silently included
+    //    both genders. Forcing the specific kpiId (see the consts above)
+    //    skips that expansion.
+    const kpiId = metric === 'male' ? MALE_KPI_ID : FEMALE_KPI_ID;
+    const widget: Widget = {
+      ...rawWidget,
+      dataFilter: rawWidget.dataFilter.map((filter) => ({ ...filter, fetchDataFor: 'line', kpiId }))
+    };
+
+    const monthStart = this.startOfMonth(this.viewDate);
+    const monthEnd = this.endOfMonth(this.viewDate);
+    const lastMonthStart = this.addMonths(monthStart, -1);
+    const lastMonthEnd = this.endOfMonth(lastMonthStart);
+    const lastYearStart = this.addMonths(monthStart, -12);
+    const lastYearEnd = this.endOfMonth(lastYearStart);
+
+    const toRange = (start: Date, end: Date) => ({
+      from: `${this.formatDate(start)} 00:00:00`,
+      to: `${this.formatDate(end)} 23:59:59`
+    });
+    const fetchDaily = (range: { from: string; to: string }) =>
+      this.kpiService
+        .postKpiData(buildKpiDataPayload(widget, group, range.from, range.to, undefined, 'dayOfMonth', 'month'))
+        .pipe(map((res) => this.sumPointsByDay(res.data.dataFilter)));
+
+    this.loading = true;
+    this.errorMessage = '';
+
+    forkJoin({
+      todayByDate: fetchDaily(toRange(monthStart, monthEnd)),
+      lmByDate: fetchDaily(toRange(lastMonthStart, lastMonthEnd)).pipe(catchError(() => of(new Map<string, number>()))),
+      lyByDate: fetchDaily(toRange(lastYearStart, lastYearEnd)).pipe(catchError(() => of(new Map<string, number>())))
+    }).subscribe({
+      next: ({ todayByDate, lmByDate, lyByDate }) => {
+        this.loading = false;
+        const lyByDay = new Map<number, number>();
+        lyByDate.forEach((value, dateKey) => {
+          const day = this.parseDdMmYyyy(dateKey)?.getDate();
+          if (day) {
+            lyByDay.set(day, value);
+          }
+        });
+        this.data = this.toCalendarResponse(todayByDate, lmByDate, lyByDay, monthStart);
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = 'Unable to load calendar data. Please check the API connection and try again.';
+      }
+    });
+  }
+
+  // Box-type widget responses bundle more than just the current period's
+  // series in one dataFilter[] - dashboard.component.ts's own fetchGenderCount
+  // (the proven-correct single-total read of this exact widget) has to filter
+  // down to `f.selected` before reading a value, rather than trusting every
+  // entry it gets back. Blindly summing every dataFilter entry here (as this
+  // used to) silently included whatever else was bundled alongside the real
+  // series, inflating the total - same shape of bug as the kpiId-expansion
+  // fix above, just at the dataFilter level instead of the kpiId level.
+  // Falls back to the first entry only if none are marked selected, rather
+  // than falling back to summing everything.
+  private sumPointsByDay(filters: KpiDataFilterResult[]): Map<string, number> {
+    const selected = filters.filter((f) => f.selected);
+    const source = selected.length ? selected : filters.slice(0, 1);
+    const byDate = new Map<string, number>();
+    for (const filter of source) {
+      for (const point of filter.data) {
+        const key = point.date ?? (point.dateFrom ? this.formatDdMmYyyy(new Date(point.dateFrom)) : null);
+        if (!key) {
+          continue;
+        }
+        byDate.set(key, (byDate.get(key) ?? 0) + (point.value ?? 0));
+      }
+    }
+    return byDate;
+  }
+
   // "Today" (selected:true) carries this month's per-day values; "PM" carries
   // the previous-month values, aligned to the same dates. Last year's request
   // returns its own "selected" series for that other month, matched back to
   // this month's days by DAY NUMBER (not date string, since the year
   // differs) - a day that doesn't exist in both months (e.g. Feb 29) simply
   // has no LY value, not a crash.
-  //
-  // Every LM/LY percentage is computed locally from the real values here
-  // rather than trusting the backend's own per-day "variation" field - that
-  // field is exactly what produced the misleading "+100%" when the prior
-  // value was 0.
-  private toCalendarResponse(filters: KpiDataFilterResult[], lyFilters: KpiDataFilterResult[], monthStart: Date): CalendarResponse {
+  private mapsFromCalendarFilters(
+    filters: KpiDataFilterResult[],
+    lyFilters: KpiDataFilterResult[]
+  ): { todayByDate: Map<string, number>; lmByDate: Map<string, number>; lyByDay: Map<number, number> } {
     const today = filters.find((f) => f.selected) ?? filters[0];
     const lastMonth = filters.find((f) => f.label === 'PM');
     const lastYear = lyFilters.find((f) => f.selected) ?? lyFilters[0];
+
+    const todayByDate = new Map<string, number>();
+    (today?.data ?? []).forEach((p) => {
+      if (p.date) {
+        todayByDate.set(p.date, p.value);
+      }
+    });
 
     const lmByDate = new Map<string, number>();
     (lastMonth?.data ?? []).forEach((p) => {
@@ -372,31 +664,50 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
       }
     });
 
+    return { todayByDate, lmByDate, lyByDay };
+  }
+
+  // Source-agnostic: takes the current month/last month/last year values as
+  // plain date-keyed maps (DD-MM-YYYY, except lyByDay which is keyed by day
+  // number since the year differs) so it works the same whether those maps
+  // came from the bundled Calendar widget response or three separate Trend
+  // Report requests - see mapsFromCalendarFilters() and fetchUniqueFootfall().
+  // A day that doesn't exist in both months (e.g. Feb 29) simply has no LY
+  // value, not a crash.
+  //
+  // Every LM/LY percentage is computed locally from the real values here
+  // rather than trusting the backend's own per-day "variation" field - that
+  // field is exactly what produced the misleading "+100%" when the prior
+  // value was 0.
+  private toCalendarResponse(
+    todayByDate: Map<string, number>,
+    lmByDate: Map<string, number>,
+    lyByDay: Map<number, number>,
+    monthStart: Date
+  ): CalendarResponse {
     const cellsByDate = new Map<string, CalendarDayCell>();
-    (today?.data ?? []).forEach((p) => {
-      if (!p.date) {
-        return;
-      }
-      const dayNum = this.parseDdMmYyyy(p.date)?.getDate() ?? 0;
-      const lmValue = lmByDate.get(p.date) ?? null;
+    todayByDate.forEach((value, date) => {
+      const dayNum = this.parseDdMmYyyy(date)?.getDate() ?? 0;
+      const lmValue = lmByDate.get(date) ?? null;
       const lyValue = lyByDay.get(dayNum) ?? null;
-      cellsByDate.set(p.date, {
-        date: p.date,
+      cellsByDate.set(date, {
+        date,
         day: dayNum,
         inMonth: true,
-        value: p.value,
+        value,
         lmValue,
-        lmChange: this.computeChange(p.value, lmValue),
+        lmChange: this.computeChange(value, lmValue),
         lyValue,
-        lyChange: this.computeChange(p.value, lyValue)
+        lyChange: this.computeChange(value, lyValue)
       });
     });
 
     const weeks = this.buildWeeks(monthStart, cellsByDate);
     const monthTotal = Array.from(cellsByDate.values()).reduce((sum, c) => sum + (c.value ?? 0), 0);
-    const lastMonthTotal = lastMonth ? Array.from(lmByDate.values()).reduce((sum, v) => sum + v, 0) : null;
-    const lastYearTotal = lastYear ? Array.from(lyByDay.values()).reduce((sum, v) => sum + v, 0) : null;
+    const lastMonthTotal = lmByDate.size ? Array.from(lmByDate.values()).reduce((sum, v) => sum + v, 0) : null;
+    const lastYearTotal = lyByDay.size ? Array.from(lyByDay.values()).reduce((sum, v) => sum + v, 0) : null;
     const bestWeek = weeks.filter((w) => w.total > 0).sort((a, b) => b.total - a.total)[0] ?? null;
+    const { weekdayAvg, weekendAvg } = this.computeDayTypeAverages(cellsByDate);
 
     return {
       scope: 'all',
@@ -410,10 +721,46 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
       lastYearTotal,
       lyChange: this.computeChange(monthTotal, lastYearTotal),
       bestWeek: bestWeek ? { label: bestWeek.label, total: bestWeek.total } : null,
+      weekdayAvg,
+      weekendAvg,
       columnLabels: WEEKDAY_LABELS,
       weeks,
       columnTotals: this.buildColumnTotals(weeks),
       availableMonths: this.buildAvailableMonths(monthStart)
+    };
+  }
+
+  // Weekend = Sat/Sun (Date.getDay() 0 and 6), weekday = Mon-Fri - same
+  // convention instore-analytics.component.ts's own weekday/weekend KPI tiles
+  // already use, not this file's Sun-start grid column order. Averaged only
+  // over in-month days that actually have a value, so a partial month doesn't
+  // get dragged down by days with no data.
+  private computeDayTypeAverages(cellsByDate: Map<string, CalendarDayCell>): { weekdayAvg: number | null; weekendAvg: number | null } {
+    let weekdaySum = 0;
+    let weekdayCount = 0;
+    let weekendSum = 0;
+    let weekendCount = 0;
+
+    cellsByDate.forEach((cell, date) => {
+      if (cell.value === null) {
+        return;
+      }
+      const day = this.parseDdMmYyyy(date)?.getDay();
+      if (day === undefined) {
+        return;
+      }
+      if (day === 0 || day === 6) {
+        weekendSum += cell.value;
+        weekendCount++;
+      } else {
+        weekdaySum += cell.value;
+        weekdayCount++;
+      }
+    });
+
+    return {
+      weekdayAvg: weekdayCount > 0 ? Math.round(weekdaySum / weekdayCount) : null,
+      weekendAvg: weekendCount > 0 ? Math.round(weekendSum / weekendCount) : null
     };
   }
 

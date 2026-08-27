@@ -28,7 +28,7 @@
       <span class="filter-caption">Scope</span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field scope-field">
         <mat-select formControlName="scope">
-          <mat-option *ngFor="let s of scopes" [value]="s.value">{{ s.label }}</mat-option>
+          <mat-option *ngFor="let s of scopes" [value]="s.value">{{ s.value === 'all' ? allStoresLabel : s.label }}</mat-option>
         </mat-select>
       </mat-form-field>
       <span class="filter-subtext">Combined traffic view</span>
@@ -101,12 +101,12 @@
       <div class="kpi-col">
         <div class="kpi-row">
           <app-kpi-card
-            label="Passer By"
+            label="Potential Customers"
             icon="directions_walk"
             description="Consolidated storefront traffic"
             [date]="displayDate"
             [metric]="passerByMetric"
-            [view]="filterForm.value.view"
+            [view]="appliedView"
           ></app-kpi-card>
           <app-kpi-card
             label="Total Footfall"
@@ -114,7 +114,7 @@
             description="Sensor traffic count"
             [date]="displayDate"
             [metric]="footfallMetric"
-            [view]="filterForm.value.view"
+            [view]="appliedView"
           ></app-kpi-card>
           <app-kpi-card
             label="Unique Footfall"
@@ -122,7 +122,7 @@
             description="Deduplicated visitors"
             [date]="displayDate"
             [metric]="uniqueFootfallMetric"
-            [view]="filterForm.value.view"
+            [view]="appliedView"
           ></app-kpi-card>
           <app-kpi-card
             label="Groups"
@@ -130,7 +130,7 @@
             description="Consolidated grouped visits"
             [date]="displayDate"
             [metric]="groupsMetric"
-            [view]="filterForm.value.view"
+            [view]="appliedView"
           ></app-kpi-card>
         </div>
       </div>
@@ -144,7 +144,7 @@
 
     <app-demographics-panel [demographics]="demographicsForPanel"></app-demographics-panel>
 
-    <app-dwell-panel [dwell]="dwellForPanel" [view]="filterForm.value.view"></app-dwell-panel>
+    <app-dwell-panel [dwell]="dwellForPanel" [view]="appliedView"></app-dwell-panel>
 
     <app-operations-panel [operations]="operationsForPanel"></app-operations-panel>
   </div>

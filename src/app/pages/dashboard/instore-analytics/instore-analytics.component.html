@@ -13,8 +13,8 @@
       <span class="filter-caption">Store</span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
         <mat-select formControlName="store">
-          <mat-option value="all">All Stores</mat-option>
-          <mat-option *ngFor="let s of storeOptions" [value]="s.value">{{ s.label }}</mat-option>
+          <mat-option value="all">{{ allStoresLabel }}</mat-option>
+          <mat-option *ngFor="let s of storeOptions" [value]="s.value" [hidden]="storeOptions.length === 1">{{ s.label }}</mat-option>
         </mat-select>
       </mat-form-field>
     </div>

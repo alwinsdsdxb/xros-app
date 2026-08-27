@@ -71,6 +71,8 @@ export interface CalendarResponse {
   lastYearTotal: number | null;
   lyChange: ChangeResult;
   bestWeek: CalendarBestWeek | null;
+  weekdayAvg: number | null;
+  weekendAvg: number | null;
   columnLabels: string[];
   weeks: CalendarWeekRow[];
   columnTotals: CalendarColumnTotal[];

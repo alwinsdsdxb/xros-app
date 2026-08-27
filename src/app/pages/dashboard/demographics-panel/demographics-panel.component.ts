@@ -53,15 +53,14 @@ export class DemographicsPanelComponent implements OnChanges {
 
     this.genderChartOptions = {
       chart: { type: 'pie', backgroundColor: 'transparent', height: 220, spacing: [6, 6, 6, 6] },
-      title: {
-        text: g
-          ? `<span style="font-size:24px;font-weight:600;color:#14273a">${(g.male + g.female).toLocaleString()}</span><br/><span style="font-size:10.5px;font-weight:600;color:#78909c;letter-spacing:0.04em">VISITORS</span>`
-          : '',
-        align: 'center',
-        verticalAlign: 'middle',
-        y: 6,
-        style: { color: '#14273a' }
-      },
+      // The center total used to be a chart.title positioned via align/
+      // verticalAlign/floating - Highcharts computes that box from its own
+      // internal spacing/plotArea math, which kept landing a pixel or two
+      // off the ring's true center no matter how it was tuned. Rendered as
+      // a plain centered HTML overlay instead (see .donut-center-label in
+      // the template/scss) - CSS flexbox centering over the chart's own
+      // bounding box can't drift the way Highcharts' title alignment did.
+      title: { text: undefined },
       credits: { enabled: false },
       tooltip: {
         pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)',
@@ -121,17 +120,18 @@ export class DemographicsPanelComponent implements OnChanges {
       yAxis: {
         title: { text: undefined },
         gridLineColor: '#e6eaec',
-        labels: { style: { color: '#78909c' } }
+        max: 100,
+        labels: { style: { color: '#78909c' }, format: '{value}%' }
       },
       legend: { enabled: false },
-      tooltip: { pointFormat: 'Visitors: <b>{point.y}</b>' },
+      tooltip: { pointFormat: '<b>{point.y}%</b> of visitors' },
       plotOptions: {
         column: {
           borderRadius: 4,
           borderWidth: 0,
           dataLabels: {
             enabled: true,
-            format: '{point.y}',
+            format: '{point.y}%',
             style: { color: '#546e7a', textOutline: 'none', fontSize: '11px' }
           }
         }
@@ -140,7 +140,7 @@ export class DemographicsPanelComponent implements OnChanges {
         {
           type: 'column',
           name: 'Age Groups',
-          data: groups.map((g, i) => ({ y: g.value, color: palette[i % palette.length] }))
+          data: groups.map((g, i) => ({ y: g.pct, color: palette[i % palette.length] }))
         }
       ]
     };

@@ -75,6 +75,16 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   errorMessage = '';
 
   storeOptions: { value: string; label: string }[] = [];
+
+  // Same reasoning as instore-analytics.component.ts's allStoresLabel:
+  // store === 'all' just omits storeIds (see fetchPeakHour), which falls
+  // back to this group's own single configured store - not a real
+  // multi-store aggregate - so the option should read as that store's real
+  // name instead of the generic "All Stores".
+  get allStoresLabel(): string {
+    return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Stores';
+  }
+
   campaignsForPanel: CampaignEvent[] | null = null;
   campaignsRangeFrom: Date | null = null;
   campaignsRangeTo: Date | null = null;

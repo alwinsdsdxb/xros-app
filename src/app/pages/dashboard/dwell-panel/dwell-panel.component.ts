@@ -42,6 +42,7 @@ export class DwellPanelComponent implements OnChanges {
   engagementChartOptions: Highcharts.Options = {};
   trendChartOptions: Highcharts.Options = {};
   engagementLegend: EngagementLegendItem[] = [];
+  engagementTotal = 0;
 
   private readonly engagementPalette = ['#0f4c73', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
 
@@ -138,6 +139,7 @@ export class DwellPanelComponent implements OnChanges {
     const buckets = this.dwell?.engagementComposition ?? [];
     const palette = this.engagementPalette;
     const total = buckets.reduce((sum, b) => sum + b.value, 0);
+    this.engagementTotal = total;
 
     this.engagementLegend = buckets.map((b, i) => ({
       label: b.label,
@@ -148,13 +150,14 @@ export class DwellPanelComponent implements OnChanges {
 
     this.engagementChartOptions = {
       chart: { type: 'pie', backgroundColor: 'transparent', height: 220 },
-      title: {
-        text: total ? `${total.toLocaleString()}<br/><span style="font-size:11px;font-weight:400">Visits</span>` : '',
-        align: 'center',
-        verticalAlign: 'middle',
-        y: 4,
-        style: { color: '#14273a', fontSize: '22px', fontWeight: '600' }
-      },
+      // The center total used to be a chart.title positioned via align/
+      // verticalAlign/floating - Highcharts computes that box from its own
+      // internal spacing/plotArea math, which kept landing a pixel or two
+      // off the ring's true center no matter how it was tuned. Rendered as
+      // a plain centered HTML overlay instead (see .donut-center-label in
+      // the template/scss) - CSS flexbox centering over the chart's own
+      // bounding box can't drift the way Highcharts' title alignment did.
+      title: { text: undefined },
       credits: { enabled: false },
       tooltip: { pointFormat: '{point.name}: <b>{point.y}</b> visits ({point.percentage:.1f}%)' },
       plotOptions: {

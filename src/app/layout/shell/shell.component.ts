@@ -3,6 +3,7 @@ import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { Subject, filter, takeUntil } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { AuthUser } from '../../core/models/auth.model';
+import { StoreContextService } from '../../core/services/store-context.service';
 
 interface NavItem {
   label: string;
@@ -43,6 +44,7 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   constructor(
     private authService: AuthService,
+    private storeContextService: StoreContextService,
     private router: Router,
     private route: ActivatedRoute
   ) {}
@@ -50,6 +52,10 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.authService.currentUser$.pipe(takeUntil(this.destroy$)).subscribe((user) => {
       this.currentUser = user;
+    });
+
+    this.storeContextService.storeName$.pipe(takeUntil(this.destroy$)).subscribe((storeName) => {
+      this.storeName = storeName;
     });
 
     this.router.events

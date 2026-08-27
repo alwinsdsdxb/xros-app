@@ -32,12 +32,18 @@
   <div class="dwell-charts">
     <div class="dwell-chart-block">
       <div class="demo-block-title">Engagement Composition</div>
-      <highcharts-chart
-        [Highcharts]="Highcharts"
-        [options]="engagementChartOptions"
-        [oneToOne]="true"
-        style="display: block; width: 100%; height: 220px"
-      ></highcharts-chart>
+      <div class="donut-wrap" style="width: 100%; height: 220px">
+        <highcharts-chart
+          [Highcharts]="Highcharts"
+          [options]="engagementChartOptions"
+          [oneToOne]="true"
+          style="display: block; width: 100%; height: 100%"
+        ></highcharts-chart>
+        <div class="donut-center-label" *ngIf="engagementTotal">
+          <span class="donut-center-value">{{ engagementTotal | number }}</span>
+          <span class="donut-center-caption">Visits</span>
+        </div>
+      </div>
       <div class="engagement-legend">
         <span class="legend-chip" *ngFor="let l of engagementLegend">
           <span class="dot" [style.background]="l.color"></span>

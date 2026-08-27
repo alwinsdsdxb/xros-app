@@ -6,6 +6,7 @@ import { Observable, catchError, finalize, forkJoin, map, of, switchMap } from '
 import { AuthService } from '../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload, buildMultiStoreKpiPayload } from '../../core/services/kpi.service';
 import { WidgetService } from '../../core/services/widget.service';
+import { StoreContextService } from '../../core/services/store-context.service';
 import {
   AgeGroup,
   CampaignEvent,
@@ -60,9 +61,9 @@ const ENGAGEMENT_TIER_LABELS: Record<string, string> = {
 // match this app's own palette rather than the widgets' own configured
 // colors (which collide once Passer By is cloned from Total Footfall's
 // dataFilter entry - see deriveTrendPasserByWidget).
-const TREND_SERIES_ORDER = ['Passer By', 'Total Footfall', 'Unique Footfall'];
+const TREND_SERIES_ORDER = ['Potential Customers', 'Total Footfall', 'Unique Footfall'];
 const TREND_SERIES_COLORS: Record<string, string> = {
-  'Passer By': '#0f4c73',
+  'Potential Customers': '#0f4c73',
   'Total Footfall': '#a7b62e',
   'Unique Footfall': '#e3a73c'
 };
@@ -108,6 +109,14 @@ export class DashboardComponent implements OnInit {
   // Apply button instead of live-tracking every toggle click before Apply.
   appliedOperationalHours = 1;
 
+  // Same snapshot pattern as appliedOperationalHours, for the View toggle.
+  // The KPI cards' comparisons() getter shows a different set of cards
+  // depending on view (Day/Week add a "Previous Week" card that Month/Year
+  // don't have) - binding straight to filterForm.value.view made that card
+  // set pop in/out the instant the toggle was clicked, before Apply and
+  // before the actual data caught up.
+  appliedView = 'Month';
+
   private footfallWidget: Widget | null = null;
   private passerByWidget: Widget | null = null;
   private rawPasserByMetric: KpiMetric | null = null;
@@ -146,6 +155,15 @@ export class DashboardComponent implements OnInit {
   private weather: { temperatureC: number; location?: string; condition?: string } | null = null;
 
   scopes = [{ value: 'all', label: 'All stores' }];
+  storeOptions: { value: string; label: string }[] = [];
+
+  // Same computation Instore Analytics/Comparison already use for their own
+  // Store dropdown label - real store name when there's exactly one store in
+  // scope, "All Stores" otherwise. The Dashboard tab's "Scope" filter is that
+  // same single-store selector, just missing this until now.
+  get allStoresLabel(): string {
+    return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Stores';
+  }
 
   dashboards: DashboardSummary[] = [];
   currentDashboardId: string | null = null;
@@ -179,6 +197,7 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private widgetService: WidgetService,
     private kpiService: KpiService,
+    private storeContextService: StoreContextService,
     private route: ActivatedRoute,
     private router: Router
   ) {
@@ -393,13 +412,23 @@ export class DashboardComponent implements OnInit {
             dwellTrendWidgets.find((w) => w.title.trim() === TWO_VISITORS_GROUP_WIDGET_TITLE && w.fetchDataFor === 'box') ?? null;
           this.moreThanTwoVisitorsWidget =
             dwellTrendWidgets.find((w) => w.title.trim() === MORE_THAN_TWO_VISITORS_WIDGET_TITLE && w.fetchDataFor === 'box') ?? null;
-          this.passerByWidget = this.deriveWidget(this.footfallWidget, 'Passer By', PASSER_BY_KPI_ID);
+          this.passerByWidget = this.deriveWidget(this.footfallWidget, 'Potential Customers', PASSER_BY_KPI_ID);
           this.passerByTrendWidget = this.deriveTrendPasserByWidget(this.trendReportWidget);
 
           const parentStoreId = this.footfallGroup?.stores[0];
           this.entranceStoreIds = parentStoreId
             ? stores.filter((s) => s.categoryName === ENTRANCE_CATEGORY_NAME && s.parentId.includes(parentStoreId)).map((s) => s._id)
             : [];
+
+          // footfallGroup.stores is only ever queried as a single store (see
+          // parentStoreId above) - never actually "all stores" - so the shell
+          // breadcrumb should show that real store's name instead of its
+          // hardcoded "All Stores" placeholder.
+          const parentStore = parentStoreId ? stores.find((s) => s._id === parentStoreId) : undefined;
+          this.storeContextService.setStoreName(parentStore?.storeName);
+
+          const footfallStoreIds = new Set(this.footfallGroup?.stores ?? []);
+          this.storeOptions = stores.filter((s) => footfallStoreIds.has(s._id)).map((s) => ({ value: s._id, label: s.storeName }));
 
           this.campaignEvents = events;
           this.refreshActiveCampaigns();
@@ -505,6 +534,7 @@ export class DashboardComponent implements OnInit {
   private fetch(): void {
     const { date: rawDate, view, operationalHours } = this.filterForm.value;
     this.appliedOperationalHours = operationalHours;
+    this.appliedView = view;
     const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(view, date);
     this.campaignsRangeFrom = from;
@@ -644,8 +674,8 @@ export class DashboardComponent implements OnInit {
     }
     return {
       ...trendReportWidget,
-      title: 'Passer By',
-      dataFilter: [{ ...totalFootfallFilter, kpiId: PASSER_BY_KPI_ID, label: 'Passer By' }]
+      title: 'Potential Customers',
+      dataFilter: [{ ...totalFootfallFilter, kpiId: PASSER_BY_KPI_ID, label: 'Potential Customers' }]
     };
   }
 
@@ -707,7 +737,7 @@ export class DashboardComponent implements OnInit {
             byLabel.set(label, series);
           }
         }
-        this.applyPasserByTrendFallback(byLabel);
+        this.applyPasserByTrendSum(byLabel);
         this.trafficSeriesForChart =
           rangeView === 'Year'
             ? this.toYearlyTrendSeries(byLabel, rangeStart, rangeEnd)
@@ -741,17 +771,25 @@ export class DashboardComponent implements OnInit {
     return byLabel;
   }
 
-  // Same "no Passer By data -> show Total Footfall instead" rule as the
-  // Passer By KPI card (refreshPasserByMetric): this tenant's Passer By
-  // sensor is genuinely empty every day, which would otherwise draw a dead
-  // flat line at 0 instead of a real trend.
-  private applyPasserByTrendFallback(byLabel: Map<string, { color: string; byDate: Map<string, number> }>): void {
-    const passerBy = byLabel.get('Passer By');
+  // Same reasoning as the Potential Customers KPI card (refreshPasserByMetric/
+  // sumMetrics): Passer By (storefront sensor) and Total Footfall (door
+  // sensor) count two different populations, so the real day-by-day figure
+  // is their sum, not the raw Passer By sensor's line alone. This also
+  // naturally covers stores with no Passer By sensor installed/synced yet -
+  // the sum just reduces to Total Footfall's own line when Passer By is
+  // missing or all-zero for a given day, instead of a dead flat line at 0.
+  private applyPasserByTrendSum(byLabel: Map<string, { color: string; byDate: Map<string, number> }>): void {
     const totalFootfall = byLabel.get(TOTAL_FOOTFALL_WIDGET_TITLE);
-    const hasPasserByData = passerBy ? Array.from(passerBy.byDate.values()).some((value) => value > 0) : false;
-    if (!hasPasserByData && totalFootfall) {
-      byLabel.set('Passer By', { color: passerBy?.color ?? totalFootfall.color, byDate: new Map(totalFootfall.byDate) });
+    if (!totalFootfall) {
+      return;
     }
+    const passerBy = byLabel.get('Potential Customers');
+    const dates = new Set([...(passerBy?.byDate.keys() ?? []), ...totalFootfall.byDate.keys()]);
+    const byDate = new Map<string, number>();
+    for (const date of dates) {
+      byDate.set(date, (passerBy?.byDate.get(date) ?? 0) + (totalFootfall.byDate.get(date) ?? 0));
+    }
+    byLabel.set('Potential Customers', { color: passerBy?.color ?? totalFootfall.color, byDate });
   }
 
   // Walks every calendar day in the month (not just days with data) so days
@@ -862,7 +900,7 @@ export class DashboardComponent implements OnInit {
   // tenant yet and stay at 0 until one exists.
   private refreshFunnelStages(): void {
     this.funnelStages = [
-      { label: 'Passer By', value: this.passerByMetric?.value ?? 0 },
+      { label: 'Potential Customers', value: this.passerByMetric?.value ?? 0 },
       { label: 'Total Traffic', value: this.footfallMetric?.value ?? 0 },
       { label: 'Unique Visitors', value: this.uniqueFootfallMetric?.value ?? 0 },
       { label: 'Potential Buyers', value: this.groupsMetric?.value ?? 0 },

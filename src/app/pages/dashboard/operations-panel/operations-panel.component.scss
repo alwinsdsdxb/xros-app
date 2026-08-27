@@ -20,9 +20,9 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  background: var(--page-plane, #f8fafb);
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8fc 100%);
   border: 1px solid var(--gridline, #e6eaec);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 12px;
 }
 
