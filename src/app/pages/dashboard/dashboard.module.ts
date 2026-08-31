@@ -33,6 +33,7 @@ import { CalendarPanelComponent } from './calendar-panel/calendar-panel.componen
 import { ActiveCampaignsPanelComponent } from './active-campaigns-panel/active-campaigns-panel.component';
 import { ForecastPanelComponent } from './forecast-panel/forecast-panel.component';
 import { ComparisonPanelComponent } from './comparison-panel/comparison-panel.component';
+import { QueuePanelComponent } from './queue-panel/queue-panel.component';
 
 @NgModule({
   declarations: [
@@ -52,7 +53,8 @@ import { ComparisonPanelComponent } from './comparison-panel/comparison-panel.co
     CalendarPanelComponent,
     ActiveCampaignsPanelComponent,
     ForecastPanelComponent,
-    ComparisonPanelComponent
+    ComparisonPanelComponent,
+    QueuePanelComponent
   ],
   imports: [
     CommonModule,

@@ -53,19 +53,7 @@ const ENTRANCE_CATEGORY_NAME = 'Entrance';
 const MALE_KPI_ID = '5ccff2f8b815e9357861f37e';
 const FEMALE_KPI_ID = '5ccff3f0b815e9357861f37f';
 
-// The Queue "Table" widget isn't in the Calendar or main dashboard group (its
-// kpiGroupId/kpiIds don't match any widget already resolved elsewhere in this
-// app), so it's looked up by _id across every group on the dashboard instead
-// of a known group name - see resolveWidget()'s queueGroupWidgets. Confirmed
-// live (real request/response) that it bundles 4 separate KPI line series in
-// one widget - Average Queue Length, Average Wait Time, Queue Abandonments,
-// Total Queue Visitors - so the single day-value the calendar grid shows is
-// just the "Total Queue Visitors" series, the same "headline count" role
-// Total Footfall plays for the main footfall widget.
-const QUEUE_WIDGET_ID = '6a7319ffd7092bb849829b95';
-const QUEUE_METRIC_LABEL = 'Total Queue Visitors';
-
-export type CalendarMetric = 'footfall' | 'unique' | 'male' | 'female' | 'queue';
+export type CalendarMetric = 'footfall' | 'unique' | 'male' | 'female';
 
 export interface CalendarMetricOption {
   value: CalendarMetric;
@@ -123,8 +111,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     { value: 'footfall', label: 'Total Footfall' },
     { value: 'unique', label: 'Unique Footfall' },
     { value: 'male', label: 'Male' },
-    { value: 'female', label: 'Female' },
-    { value: 'queue', label: 'Queue' }
+    { value: 'female', label: 'Female' }
   ];
   selectedMetric: CalendarMetric = 'footfall';
 
@@ -135,8 +122,6 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   private trendReportWidget: Widget | null = null;
   private maleWidget: Widget | null = null;
   private femaleWidget: Widget | null = null;
-  private queueWidget: Widget | null = null;
-  private queueGroup: DashboardGroup | null = null;
   private entranceStoreIds: string[] = [];
   private hourlyRawRows: { hour: number; value: number }[] = [];
   private weekBounds: { start: Date; end: Date }[] = [];
@@ -379,28 +364,17 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
           return forkJoin({
             calendarWidgets: group ? this.widgetService.getWidgets(group._id) : of([] as Widget[]),
             footfallWidgets: footfallGroup ? this.widgetService.getWidgets(footfallGroup._id) : of([] as Widget[]),
-            stores: this.widgetService.getStores(),
-            // Queue's widget isn't under a known group name/order - every
-            // group's widget list is fetched here so it can be found by _id
-            // regardless of which group actually holds it (see the const
-            // comment above).
-            queueGroupWidgets: forkJoin(
-              groups.map((g) => this.widgetService.getWidgets(g._id).pipe(map((widgets) => ({ group: g, widgets }))))
-            )
+            stores: this.widgetService.getStores()
           });
         })
       )
       .subscribe({
-        next: ({ calendarWidgets, footfallWidgets, stores, queueGroupWidgets }) => {
+        next: ({ calendarWidgets, footfallWidgets, stores }) => {
           this.widget = calendarWidgets.find((w) => w.title.trim() === CALENDAR_WIDGET_TITLE) ?? null;
           this.uniqueFootfallWidget = footfallWidgets.find((w) => w.title.trim() === UNIQUE_FOOTFALL_WIDGET_TITLE) ?? null;
           this.trendReportWidget = footfallWidgets.find((w) => w.title.trim() === TREND_REPORT_WIDGET_TITLE) ?? null;
           this.maleWidget = footfallWidgets.find((w) => w.title.trim() === MALE_WIDGET_TITLE) ?? null;
           this.femaleWidget = footfallWidgets.find((w) => w.title.trim() === FEMALE_WIDGET_TITLE) ?? null;
-
-          const queueMatch = queueGroupWidgets.find((gw) => gw.widgets.some((w) => w._id === QUEUE_WIDGET_ID));
-          this.queueGroup = queueMatch?.group ?? null;
-          this.queueWidget = queueMatch?.widgets.find((w) => w._id === QUEUE_WIDGET_ID) ?? null;
 
           const parentStoreId = this.footfallGroup?.stores[0];
           this.entranceStoreIds = parentStoreId
@@ -422,10 +396,6 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     }
     if (this.selectedMetric === 'male' || this.selectedMetric === 'female') {
       this.fetchGenderDaily(this.selectedMetric);
-      return;
-    }
-    if (this.selectedMetric === 'queue') {
-      this.fetchQueue();
       return;
     }
     this.fetchCalendarWidget();
@@ -630,89 +600,6 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
         this.errorMessage = 'Unable to load calendar data. Please check the API connection and try again.';
       }
     });
-  }
-
-  // Queue's own widget has no bundled "PM" comparison series (confirmed live
-  // - its response is just the 4 KPIs' plain per-day series for whatever
-  // range was requested), so LM/LY are two extra explicit requests, same
-  // pattern as fetchUniqueFootfall/fetchGenderDaily. timeFrame/dateByFilter
-  // are forced to the exact 'dayOfMonth'/'month' pair confirmed live rather
-  // than trusting queueGroup's own stored defaults, since queueGroup is
-  // whichever group the widget search happened to find it in - not a group
-  // this app otherwise reads timeFrame/dateByFilter from.
-  private fetchQueue(): void {
-    if (!this.queueWidget || !this.queueGroup) {
-      this.data = null;
-      return;
-    }
-    const widget = this.queueWidget;
-    const group = this.queueGroup;
-
-    const monthStart = this.startOfMonth(this.viewDate);
-    const monthEnd = this.endOfMonth(this.viewDate);
-    const lastMonthStart = this.addMonths(monthStart, -1);
-    const lastMonthEnd = this.endOfMonth(lastMonthStart);
-    const lastYearStart = this.addMonths(monthStart, -12);
-    const lastYearEnd = this.endOfMonth(lastYearStart);
-
-    const toRange = (start: Date, end: Date) => ({
-      from: `${this.formatDate(start)} 00:00:00`,
-      to: `${this.formatDate(end)} 23:59:59`
-    });
-    const fetchDaily = (range: { from: string; to: string }) =>
-      this.kpiService
-        .postKpiData(buildKpiDataPayload(widget, group, range.from, range.to, undefined, 'dayOfMonth', 'month'))
-        .pipe(map((res) => this.sumQueueMetricByDay(res.data.dataFilter, QUEUE_METRIC_LABEL)));
-
-    this.loading = true;
-    this.errorMessage = '';
-
-    forkJoin({
-      todayByDate: fetchDaily(toRange(monthStart, monthEnd)),
-      lmByDate: fetchDaily(toRange(lastMonthStart, lastMonthEnd)).pipe(catchError(() => of(new Map<string, number>()))),
-      lyByDate: fetchDaily(toRange(lastYearStart, lastYearEnd)).pipe(catchError(() => of(new Map<string, number>())))
-    }).subscribe({
-      next: ({ todayByDate, lmByDate, lyByDate }) => {
-        this.loading = false;
-        const lyByDay = new Map<number, number>();
-        lyByDate.forEach((value, dateKey) => {
-          const day = this.parseDdMmYyyy(dateKey)?.getDate();
-          if (day) {
-            lyByDay.set(day, value);
-          }
-        });
-        this.data = this.toCalendarResponse(todayByDate, lmByDate, lyByDay, monthStart);
-      },
-      error: () => {
-        this.loading = false;
-        this.errorMessage = 'Unable to load calendar data. Please check the API connection and try again.';
-      }
-    });
-  }
-
-  // Each of the 4 queue KPIs comes back as its own dataFilter entry, labeled
-  // "<store>::<kpi label>" (e.g. "Centerpoint - Dubai Hills Mall::Total Queue
-  // Visitors") - same "store::label" shape as Unique Footfall's per-entrance
-  // series (sumUniqueFootfallByDay), just single-store here. Response points
-  // already carry a DD-MM-YYYY `date` field (unlike Trend Report, which only
-  // has `dateFrom`) - reused directly since it's the same key format every
-  // other calendar map in this file already uses.
-  private sumQueueMetricByDay(filters: KpiDataFilterResult[], metricLabel: string): Map<string, number> {
-    const byDate = new Map<string, number>();
-    for (const filter of filters) {
-      const label = filter.label.split('::').pop() || filter.label;
-      if (label !== metricLabel) {
-        continue;
-      }
-      for (const point of filter.data) {
-        const key = point.date ?? (point.dateFrom ? this.formatDdMmYyyy(new Date(point.dateFrom)) : null);
-        if (!key) {
-          continue;
-        }
-        byDate.set(key, (byDate.get(key) ?? 0) + (point.value ?? 0));
-      }
-    }
-    return byDate;
   }
 
   // Box-type widget responses bundle more than just the current period's

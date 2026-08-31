@@ -181,4 +181,12 @@
     [dashboards]="dashboards"
     (dashboardChange)="onDashboardChange($event)"
   ></app-comparison-panel>
+
+  <app-queue-panel
+    *ngIf="visitedTabs.has('queue')"
+    [hidden]="activeTab !== 'queue'"
+    [dashboardId]="currentDashboardId"
+    [dashboards]="dashboards"
+    (dashboardChange)="onDashboardChange($event)"
+  ></app-queue-panel>
 </div>

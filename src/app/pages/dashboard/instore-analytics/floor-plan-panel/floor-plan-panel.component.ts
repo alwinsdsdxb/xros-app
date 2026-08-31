@@ -335,9 +335,9 @@ export class FloorPlanPanelComponent implements OnChanges, AfterViewInit, OnDest
     tooltip.style.display = 'block';
     tooltip.innerHTML = `
       <div class="tooltip-title"><span class="tooltip-swatch" style="background:${hit.stroke}"></span>${hit.zone.zoneName}</div>
-      <div class="tooltip-row"><span>Traffic</span><b>${hit.zone.traffic.toLocaleString('en-US')}</b></div>
-      <div class="tooltip-row"><span>Visitors</span><b>${hit.zone.visitorTraffic.toLocaleString('en-US')}</b></div>
-      <div class="tooltip-row"><span>Attention Visitors</span><b>${hit.zone.attentionVisitors.toLocaleString('en-US')}</b></div>
+      <div class="tooltip-row"><span>Total Footfall</span><b>${hit.zone.traffic.toLocaleString('en-US')}</b></div>
+      <div class="tooltip-row"><span>Unique Footfall</span><b>${hit.zone.visitorTraffic.toLocaleString('en-US')}</b></div>
+      <div class="tooltip-row"><span>Potential Buyers</span><b>${hit.zone.attentionVisitors.toLocaleString('en-US')}</b></div>
       <div class="tooltip-row"><span>Avg Dwell</span><b>${this.formatDuration(hit.zone.avgResidenceTime)}</b></div>
     `;
 

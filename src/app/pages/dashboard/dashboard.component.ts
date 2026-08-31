@@ -192,17 +192,18 @@ export class DashboardComponent implements OnInit {
     { value: 0, label: '24 Hours' }
   ];
 
-  activeTab: 'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison' = 'dashboard';
+  activeTab: 'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison' | 'queue' = 'dashboard';
 
-  // Tabs the user has switched to at least once. Instore/Calendar/Forecast/Comparison
+  // Tabs the user has switched to at least once. Instore/Calendar/Forecast/Comparison/Queue
   // are mounted with *ngIf on first visit only and kept alive with [hidden] after
   // that, so their ngOnInit()/initial API calls never re-run on a later
   // revisit - only Apply refreshes their data (see selectTab()).
-  readonly visitedTabs = new Set<'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison'>(['dashboard']);
+  readonly visitedTabs = new Set<'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison' | 'queue'>(['dashboard']);
 
   readonly pageTabs = [
     { value: 'dashboard', label: 'Dashboard', enabled: true },
     { value: 'instore', label: 'Instore Analytics', enabled: true },
+    { value: 'queue', label: 'Queue Management', enabled: true },
     { value: 'calendar', label: 'Calendar', enabled: true },
     // Forecast tab hidden for the time being - re-add this entry to bring it back.
     { value: 'comparison', label: 'Comparison', enabled: true }
@@ -364,7 +365,7 @@ export class DashboardComponent implements OnInit {
     if (!tab.enabled) {
       return;
     }
-    this.activeTab = tab.value as 'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison';
+    this.activeTab = tab.value as 'dashboard' | 'instore' | 'calendar' | 'forecast' | 'comparison' | 'queue';
     this.visitedTabs.add(this.activeTab);
 
     // The Highcharts panels on these tabs (Power Hour Footfall, Zone

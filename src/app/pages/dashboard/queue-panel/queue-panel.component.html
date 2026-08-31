@@ -1,0 +1,273 @@
+<div class="queue-page">
+  <div class="filter-bar" [formGroup]="filterForm">
+    <div class="filter-box" *ngIf="!fixedDashboardId && dashboards.length > 1">
+      <span class="filter-caption">Dashboard</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field dashboard-field">
+        <mat-select [value]="dashboardId" (selectionChange)="dashboardChange.emit($event.value)">
+          <mat-option *ngFor="let d of dashboards" [value]="d._id">{{ d.dashboardName }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Scope</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field scope-field">
+        <mat-select formControlName="scope">
+          <mat-option value="all">{{ allQueuesLabel }}</mat-option>
+        </mat-select>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">View</span>
+      <mat-button-toggle-group formControlName="view" class="view-toggle" [hideSingleSelectionIndicator]="true">
+        <mat-button-toggle *ngFor="let v of views" [value]="v">{{ v }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <div class="filter-box" *ngIf="filterForm.value.view !== 'Custom' && filterForm.value.view !== 'Yesterday'">
+      <span class="filter-caption">Date Range</span>
+      <button type="button" class="date-range-btn" (click)="picker.open()">
+        <span class="date-range-main">{{
+          filterForm.value.date | date: (usesMonthPicker ? 'MMMM, y' : 'd MMM y')
+        }}</span>
+        <mat-icon class="date-range-icon">calendar_today</mat-icon>
+      </button>
+      <input class="date-range-input" matInput [matDatepicker]="picker" formControlName="date" />
+      <mat-datepicker #picker [startView]="usesMonthPicker ? 'year' : 'month'" (monthSelected)="onMonthSelected($event, picker)"></mat-datepicker>
+    </div>
+
+    <div class="filter-box" *ngIf="filterForm.value.view === 'Custom'" [formGroup]="customRangeGroup">
+      <span class="filter-caption">Date Range</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field date-range-field">
+        <mat-date-range-input [rangePicker]="rangePicker">
+          <input matStartDate formControlName="start" placeholder="Start" />
+          <input matEndDate formControlName="end" placeholder="End" />
+        </mat-date-range-input>
+        <mat-datepicker-toggle matSuffix [for]="rangePicker"></mat-datepicker-toggle>
+        <mat-date-range-picker #rangePicker></mat-date-range-picker>
+      </mat-form-field>
+    </div>
+
+    <div class="filter-box">
+      <span class="filter-caption">Hours</span>
+      <mat-button-toggle-group formControlName="operationalHours" class="hours-toggle" [hideSingleSelectionIndicator]="true">
+        <mat-button-toggle *ngFor="let h of hoursOptions" [value]="h.value">{{ h.label }}</mat-button-toggle>
+      </mat-button-toggle-group>
+    </div>
+
+    <button mat-flat-button color="primary" class="apply-btn" (click)="apply()" [disabled]="loading">Apply</button>
+  </div>
+
+  <div class="loading-row" *ngIf="loading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading queue data...</span>
+  </div>
+  <div class="error-row" *ngIf="errorMessage && !loading">{{ errorMessage }}</div>
+
+  <div class="queue-container">
+    <div class="queue-tag-row">
+      <span class="section-tag">QUEUE &amp; SERVICE ANALYTICS</span>
+    </div>
+
+    <ng-container *ngIf="!errorMessage">
+    <div class="kpi-tile-row">
+      <div class="kpi-tile" *ngFor="let t of kpiTiles">
+        <div class="tile-header">
+          <span class="tile-label">{{ t.label }}</span>
+          <mat-icon class="tile-icon" [class.icon-good]="t.colorClass === 'good'" [class.icon-bad]="t.colorClass === 'bad'">{{ t.icon }}</mat-icon>
+        </div>
+        <div class="tile-value">{{ t.valueLabel }}</div>
+        <div class="tile-delta" [class.delta-good]="t.colorClass === 'good'" [class.delta-bad]="t.colorClass === 'bad'">
+          <mat-icon class="delta-arrow" *ngIf="t.deltaPct !== null">{{ t.deltaPct >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+          {{ t.deltaLabel }}
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Trend Over Time
+          <mat-icon class="info-icon" title="Avg. Queue Time and Avg. Service Time, per day">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="trendChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Queue Time vs Target ({{ formatDuration(queueTargetSeconds) }})
+          <mat-icon class="info-icon" title="Avg. Queue Time per day vs fixed 1.5-min target">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="targetChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Queue Demand (Count)
+          <mat-icon class="info-icon" title="Total Queue Visitors, summed per day">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="demandChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Wait-to-Service Ratio (x)
+          <mat-icon class="info-icon" title="Avg. Queue Time ÷ Avg. Service Time">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="ratioChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Waiting Time Share (%)
+          <mat-icon class="info-icon" title="Avg. Queue Time ÷ (Queue + Service Time) × 100">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="shareChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Total Customer Waiting Load <span class="chart-subtitle">(Queue Count × Avg. Queue Time)</span>
+          <mat-icon class="info-icon" title="Queue Count × Avg. Queue Time (minutes)">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="loadChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card">
+        <div class="chart-title">
+          Avg. Processing Time <span class="chart-subtitle">(Queue + Service)</span>
+          <mat-icon class="info-icon" title="Avg. Queue Time + Avg. Service Time">info</mat-icon>
+        </div>
+        <highcharts-chart [Highcharts]="Highcharts" [options]="processingChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+      </mat-card>
+
+      <mat-card class="xros-card chart-card queue-calendar-card">
+        <div class="calendar-nav-row">
+          <button type="button" class="nav-icon-btn" (click)="prevCalendarMonth()" [disabled]="calendarMonthLoading">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <div class="calendar-month-label">{{ calendarMonthLabel }}</div>
+          <button type="button" class="nav-icon-btn" (click)="nextCalendarMonth()" [disabled]="calendarMonthLoading">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+          <button type="button" class="today-btn" (click)="goToCalendarToday()" [disabled]="calendarMonthLoading">Today</button>
+          <mat-icon class="info-icon" title="Shaded by Avg. Queue Time">info</mat-icon>
+        </div>
+
+        <div class="loading-row" *ngIf="calendarMonthLoading">
+          <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
+          <span>Loading...</span>
+        </div>
+        <div class="error-row" *ngIf="calendarMonthError && !calendarMonthLoading">{{ calendarMonthError }}</div>
+
+        <ng-container *ngIf="!calendarMonthLoading && !calendarMonthError">
+          <div class="queue-calendar-weekdays">
+            <span *ngFor="let d of calendarWeekdayLabels">{{ d }}</span>
+          </div>
+          <div class="queue-calendar-grid">
+            <ng-container *ngFor="let week of calendarWeeks">
+              <button
+                type="button"
+                *ngFor="let cell of week"
+                class="queue-calendar-cell"
+                [class.out-month]="!cell.inMonth"
+                [class.selected]="selectedCalendarDay && cell.row && selectedCalendarDay.isoDate === cell.isoDate"
+                [ngClass]="cell.row ? 'intensity-' + cell.intensity : ''"
+                [disabled]="!cell.row"
+                (click)="selectCalendarDay(cell)"
+              >
+                <span class="cell-day">{{ cell.day }}</span>
+              </button>
+            </ng-container>
+          </div>
+
+          <div class="queue-calendar-detail" *ngIf="selectedCalendarDay as sel">
+            <div class="detail-date">{{ sel.isoDate }}</div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Avg. Queue Length</span>
+                <span class="detail-value">{{ sel.queueLength }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Queue Count</span>
+                <span class="detail-value">{{ formatCount(sel.queueCount) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Avg. Queue Time</span>
+                <span class="detail-value">{{ formatDuration(sel.queueTimeSec) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Avg. Service Time</span>
+                <span class="detail-value">{{ formatDuration(sel.serviceTimeSec) }}</span>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </mat-card>
+    </div>
+
+    <mat-card class="xros-card table-card">
+      <div class="table-title">Tabular Representation – Daily Summary</div>
+      <div class="table-scroll">
+        <table class="queue-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Avg. Queue Length</th>
+              <th>Queue Count</th>
+              <th>Avg. Queue Time</th>
+              <th>Avg. Service Time</th>
+              <th>Avg. Processing Time</th>
+              <th>Wait-to-Service Ratio</th>
+              <th>Waiting Time Share</th>
+              <th>Queue Target Variance</th>
+              <th>Queue Target Variance %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of dailyRows">
+              <td>{{ r.isoDate }}</td>
+              <td>{{ r.queueLength }}</td>
+              <td>{{ formatCount(r.queueCount) }}</td>
+              <td>{{ formatDuration(r.queueTimeSec) }}</td>
+              <td>{{ formatDuration(r.serviceTimeSec) }}</td>
+              <td>{{ formatDuration(r.processingTimeSec) }}</td>
+              <td>{{ r.waitToServiceRatio.toFixed(2) }}x</td>
+              <td>{{ r.waitingSharePct.toFixed(1) }}%</td>
+              <td [class.change-negative]="r.queueTargetVarianceSec > 0" [class.change-positive]="r.queueTargetVarianceSec <= 0">
+                {{ r.queueTargetVarianceSec >= 0 ? '+' : '' }}{{ formatDuration(r.queueTargetVarianceSec < 0 ? -r.queueTargetVarianceSec : r.queueTargetVarianceSec) }}
+              </td>
+              <td [class.change-negative]="r.queueTargetVariancePct > 0" [class.change-positive]="r.queueTargetVariancePct <= 0">
+                {{ r.queueTargetVariancePct >= 0 ? '+' : '' }}{{ r.queueTargetVariancePct.toFixed(1) }}%
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-card>
+
+    <mat-card class="xros-card table-card">
+      <div class="table-title">Tabular Representation – Metrics Summary</div>
+        <div class="table-scroll">
+          <table class="queue-table">
+            <thead>
+              <tr>
+                <th>Metric</th>
+                <th>Formula</th>
+                <th>Interpretation</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let m of metricsSummaryRows">
+                <td>{{ m.metric }}</td>
+                <td>{{ m.formula }}</td>
+                <td>{{ m.interpretation }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+    </mat-card>
+    </ng-container>
+  </div>
+</div>
