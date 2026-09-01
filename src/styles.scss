@@ -10,8 +10,17 @@ body {
 // zooming out. Applied on `html` (not a wrapper transform) so it rescales
 // actual layout/viewport computation, keeping CDK overlays - which the CDK
 // appends to `<body>`, not inside `<app-root>` - aligned with the page.
-html {
-  zoom: 0.8;
+//
+// Scoped to desktop widths only: CSS `zoom` on the root scales rendering
+// without changing the layout viewport, so on a phone it leaves the actual
+// screen with the whole page rendered at 80% size and a permanent dead
+// margin down the right/bottom edge instead of filling it. Mobile/tablet
+// layouts below are authored to their own real CSS-pixel breakpoints, so
+// they render correctly at normal (unzoomed) scale.
+@media (min-width: 900px) {
+  html {
+    zoom: 0.8;
+  }
 }
 
 body {

@@ -20,6 +20,13 @@
   }
 }
 
+@media (max-width: 600px) {
+  .login-page {
+    padding: 20px 12px;
+    gap: 16px;
+  }
+}
+
 .brand-panel,
 .form-panel {
   background: #ffffff;
@@ -30,6 +37,14 @@
   padding: 48px;
   position: relative;
   overflow: hidden;
+}
+
+@media (max-width: 600px) {
+  .brand-panel,
+  .form-panel {
+    padding: 24px 20px;
+    border-radius: 16px;
+  }
 }
 
 .brand-panel {
@@ -56,6 +71,16 @@
   line-height: 1.1;
   color: var(--ink-primary);
   margin: 0 0 16px;
+}
+
+@media (max-width: 600px) {
+  .brand-headline {
+    font-size: 34px;
+  }
+
+  .brand-logo-img {
+    width: 180px;
+  }
 }
 
 .brand-desc {
@@ -133,6 +158,12 @@
   border-radius: 22px !important;
   border: 1px solid var(--border-hairline, #e6eaec) !important;
   box-shadow: 0 2px 8px rgba(20, 39, 58, 0.05) !important;
+}
+
+@media (max-width: 600px) {
+  .login-card {
+    padding: 24px !important;
+  }
 }
 
 .login-title {

@@ -33,6 +33,21 @@
   padding: 0 !important;
 }
 
+// Same fixed-height pill filter row as the main Dashboard tab, so it scrolls
+// horizontally on narrow screens instead of wrapping/crushing its controls.
+@media (max-width: 900px) {
+  .filter-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px !important;
+  }
+
+  .filter-box,
+  .apply-btn {
+    flex: none;
+  }
+}
+
 .filter-box {
   display: block;
   flex: none;
@@ -264,5 +279,12 @@
 
   .bottom-row {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .instore-analysis-container {
+    padding: 16px;
+    gap: 18px;
   }
 }

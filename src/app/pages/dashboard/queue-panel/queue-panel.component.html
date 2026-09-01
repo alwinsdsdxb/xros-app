@@ -178,6 +178,7 @@
                 (click)="selectCalendarDay(cell)"
               >
                 <span class="cell-day">{{ cell.day }}</span>
+                <span class="cell-count" *ngIf="cell.row">{{ formatCount(cell.row.queueCount) }}</span>
               </button>
             </ng-container>
           </div>

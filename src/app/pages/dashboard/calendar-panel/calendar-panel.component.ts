@@ -176,6 +176,38 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     return value === null ? '—' : value.toLocaleString('en-US');
   }
 
+  // Sequential heat scale (light -> dark, one hue) so each day cell's
+  // background reflects where its count falls within the visible month for
+  // whichever metric is currently selected - recomputed from the live month
+  // max rather than cached, so switching metrics (footfall/unique/male/
+  // female) re-scales the shading instead of reusing a stale range.
+  dayIntensityClass(day: CalendarDayCell): string {
+    if (!day.inMonth || day.value === null || day.value <= 0) {
+      return '';
+    }
+    const max = this.monthMaxValue();
+    if (max <= 0) {
+      return '';
+    }
+    const bucket = Math.min(3, Math.floor((day.value / max) * 4));
+    return `intensity-${bucket}`;
+  }
+
+  private monthMaxValue(): number {
+    if (!this.data) {
+      return 0;
+    }
+    let max = 0;
+    for (const week of this.data.weeks) {
+      for (const day of week.days) {
+        if (day.inMonth && day.value !== null && day.value > max) {
+          max = day.value;
+        }
+      }
+    }
+    return max;
+  }
+
   // Total Footfall only for now - the hour-level override below is only
   // confirmed to work on the real "Calendar" widget (see the comment on the
   // override itself). Unique Footfall's Trend Report widget gets its day-wise

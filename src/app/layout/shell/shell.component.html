@@ -1,5 +1,16 @@
 <div class="shell">
-  <aside class="sidebar">
+  <div class="sidebar-backdrop" *ngIf="mobileNavOpen" (click)="closeMobileNav()"></div>
+
+  <aside class="sidebar" [class.mobile-open]="mobileNavOpen">
+    <button
+      type="button"
+      class="mobile-close-btn"
+      aria-label="Close navigation"
+      (click)="closeMobileNav()"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+
     <div class="brand">
       <img src="/logo.png" alt="Xpandretail — powered by Sàvant" class="brand-logo-img" />
     </div>
@@ -62,12 +73,22 @@
 
   <div class="content-area">
     <header class="breadcrumb-bar">
-      <div class="breadcrumb">
-        <span>XR OPERATING SYSTEM&trade;</span>
-        <mat-icon class="crumb-sep">chevron_right</mat-icon>
-        <span>{{ storeName }}</span>
-        <mat-icon class="crumb-sep">chevron_right</mat-icon>
-        <span>PLATFORM ADMIN</span>
+      <div class="breadcrumb-top">
+        <button
+          type="button"
+          class="mobile-menu-btn"
+          aria-label="Open navigation"
+          (click)="toggleMobileNav()"
+        >
+          <mat-icon>menu</mat-icon>
+        </button>
+        <div class="breadcrumb">
+          <span>XR OPERATING SYSTEM&trade;</span>
+          <mat-icon class="crumb-sep">chevron_right</mat-icon>
+          <span>{{ storeName }}</span>
+          <mat-icon class="crumb-sep">chevron_right</mat-icon>
+          <span>PLATFORM ADMIN</span>
+        </div>
       </div>
       <h1 class="page-title">{{ pageTitle }}</h1>
     </header>

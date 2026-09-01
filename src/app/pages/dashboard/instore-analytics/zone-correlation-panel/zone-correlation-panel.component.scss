@@ -7,6 +7,7 @@
 
 .correlation-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   border-bottom: 1px solid var(--border-hairline);
   margin-bottom: 12px;

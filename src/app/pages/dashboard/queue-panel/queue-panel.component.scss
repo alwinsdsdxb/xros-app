@@ -30,6 +30,12 @@
     0 2px 6px rgba(38, 50, 56, 0.08);
 }
 
+@media (max-width: 600px) {
+  .queue-container {
+    padding: 16px;
+  }
+}
+
 // Same small uppercase pill heading the Dashboard ("DASHBOARD"), Trend
 // ("TREND") and Instore Analytics ("INSTORE ANALYTICS") tabs use in place of
 // a large custom title - keeps Queue's heading reading as part of the same
@@ -235,6 +241,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -271,6 +278,7 @@
 .tile-delta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 3px;
   font-size: 11.5px;
   color: var(--ink-muted);
@@ -414,14 +422,16 @@
 .queue-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  grid-auto-rows: 32px;
+  grid-auto-rows: 40px;
   gap: 2px;
 }
 
 .queue-calendar-cell {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   border: 1px solid #eef2f6;
   border-radius: 4px;
   background: #f3f7fa;
@@ -450,6 +460,13 @@
   font-size: 9.5px;
   font-weight: 700;
   color: var(--ink-secondary);
+}
+
+.cell-count {
+  font-size: 8.5px;
+  font-weight: 600;
+  color: var(--ink-primary);
+  font-variant-numeric: tabular-nums;
 }
 
 .queue-calendar-detail {

@@ -230,3 +230,14 @@
     max-height: 420px;
   }
 }
+
+// A floor plan is spatial - below this width it's more useful to keep it at
+// a legible size and let .floor-plan-stage's existing overflow:auto scroll it
+// horizontally than to keep shrinking it edge-to-edge. Canvas sizing itself
+// (draw()/ResizeObserver) already reads its parent's clientWidth on every
+// resize, so it re-measures against this min-width with no extra code.
+@media (max-width: 600px) {
+  .floor-plan-canvas-wrap {
+    min-width: 480px;
+  }
+}

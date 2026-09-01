@@ -30,6 +30,24 @@ const QUEUE_COUNT_LABEL = 'Total Queue Visitors';
 // user-configurable.
 const QUEUE_TARGET_SECONDS = 90;
 
+// Same fixed categorical order as styles.scss's --series-1..8 (the app's one
+// data-viz palette), assigned per metric identity instead of the ad-hoc hex
+// values these charts used before, so "Queue Time" reads as the same blue
+// everywhere it appears (Trend's line, Target's bar) and no chart pairs two
+// metrics that are hard to tell apart. --series-7 is skipped (too low-chroma,
+// reads as gray) and gold/olive (--series-4/--series-3) are only ever used in
+// separate single-series charts - together they fail colorblind separation.
+const QUEUE_CHART_COLORS = {
+  queueTime: '#2f6fa7', // --series-1
+  serviceTime: '#e2703a', // --series-2
+  queueCount: '#a7b62e', // --series-3
+  waitingShare: '#e3a73c', // --series-4
+  processingTime: '#1e8a7c', // --series-5
+  waitToServiceRatio: '#7b5ea7', // --series-6
+  waitingLoad: '#d64545', // --series-8
+  targetLine: '#94a3ad' // neutral reference line, not a categorical series
+};
+
 const DEFAULT_RANGE_DAYS = 12;
 
 const CALENDAR_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -205,6 +223,16 @@ export class QueuePanelComponent implements OnInit, OnChanges {
 
   apply(): void {
     this.fetch();
+    // The calendar is its own independent month browser (like the main
+    // Calendar tab's prev/today/next), but it still needs to pick up the
+    // top filter's View/Date/Hours selection on Apply - otherwise picking a
+    // different month/date up there leaves the calendar showing whatever
+    // month it happened to be on, and the Hours toggle never reaches its
+    // own fetch at all.
+    const { date: rawDate, view } = this.filterForm.value;
+    const date = view === 'Yesterday' ? this.yesterday() : rawDate;
+    this.calendarMonth = this.startOfMonth(new Date(date));
+    this.fetchCalendarMonth();
   }
 
   prevCalendarMonth(): void {
@@ -587,42 +615,43 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const durationLabels = { formatter: (ctx: { value: number | string }) => this.formatDuration(Number(ctx.value)) };
 
     this.trendChartOptions = this.lineChart(categories, [
-      { name: 'Avg. Queue Time', color: '#0f4c73', data: rows.map((r) => r.queueTimeSec) },
-      { name: 'Avg. Service Time', color: '#2e9e6b', data: rows.map((r) => r.serviceTimeSec) }
+      { name: 'Avg. Queue Time', color: QUEUE_CHART_COLORS.queueTime, data: rows.map((r) => r.queueTimeSec) },
+      { name: 'Avg. Service Time', color: QUEUE_CHART_COLORS.serviceTime, data: rows.map((r) => r.serviceTimeSec) }
     ], durationLabels, (v) => this.formatDuration(v));
 
     this.targetChartOptions = {
-      ...this.barChart(categories, 'Avg. Queue Time', '#2a78d6', rows.map((r) => r.queueTimeSec), durationLabels, (v) => this.formatDuration(v)),
+      ...this.barChart(categories, 'Avg. Queue Time', QUEUE_CHART_COLORS.queueTime, rows.map((r) => r.queueTimeSec), durationLabels, (v) => this.formatDuration(v)),
       series: [
         {
           type: 'column',
           name: 'Avg. Queue Time',
-          color: '#2a78d6',
+          color: QUEUE_CHART_COLORS.queueTime,
           data: rows.map((r) => r.queueTimeSec)
         },
         {
           type: 'line',
           name: 'Target (1.5 min)',
-          color: '#e2431e',
+          color: QUEUE_CHART_COLORS.targetLine,
           dashStyle: 'ShortDash',
+          lineWidth: 2,
           marker: { enabled: false },
           data: rows.map(() => QUEUE_TARGET_SECONDS)
         }
       ]
     };
 
-    this.demandChartOptions = this.barChart(categories, 'Queue Count', '#2a78d6', rows.map((r) => r.queueCount));
+    this.demandChartOptions = this.barChart(categories, 'Queue Count', QUEUE_CHART_COLORS.queueCount, rows.map((r) => r.queueCount));
 
     this.ratioChartOptions = this.lineChart(
       categories,
-      [{ name: 'Wait-to-Service Ratio', color: '#8e44ad', data: rows.map((r) => Math.round(r.waitToServiceRatio * 100) / 100) }],
+      [{ name: 'Wait-to-Service Ratio', color: QUEUE_CHART_COLORS.waitToServiceRatio, data: rows.map((r) => Math.round(r.waitToServiceRatio * 100) / 100) }],
       { formatter: (ctx: { value: number | string }) => `${ctx.value}x` },
       (v) => `${v.toFixed(2)}x`
     );
 
     this.shareChartOptions = this.lineChart(
       categories,
-      [{ name: 'Waiting Time Share', color: '#e3a73c', data: rows.map((r) => Math.round(r.waitingSharePct * 10) / 10) }],
+      [{ name: 'Waiting Time Share', color: QUEUE_CHART_COLORS.waitingShare, data: rows.map((r) => Math.round(r.waitingSharePct * 10) / 10) }],
       { formatter: (ctx: { value: number | string }) => `${ctx.value}%` },
       (v) => `${v.toFixed(1)}%`
     );
@@ -630,13 +659,13 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     this.loadChartOptions = this.barChart(
       categories,
       'Customer-Minutes',
-      '#0f4c73',
+      QUEUE_CHART_COLORS.waitingLoad,
       rows.map((r) => Math.round((r.queueCount * r.queueTimeSec) / 60))
     );
 
     this.processingChartOptions = this.lineChart(
       categories,
-      [{ name: 'Avg. Processing Time', color: '#1fa38f', data: rows.map((r) => r.processingTimeSec) }],
+      [{ name: 'Avg. Processing Time', color: QUEUE_CHART_COLORS.processingTime, data: rows.map((r) => r.processingTimeSec) }],
       durationLabels,
       (v) => this.formatDuration(v)
     );
@@ -654,7 +683,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       title: { text: undefined },
       credits: { enabled: false },
       xAxis: { categories, labels: { style: { color: '#78909c', fontSize: '10px' } }, lineColor: '#e6eaec', tickColor: '#e6eaec' },
-      yAxis: { title: { text: undefined }, gridLineColor: '#eef1f5', labels: { style: { color: '#78909c', fontSize: '10px' }, ...yLabels } },
+      yAxis: { title: { text: undefined }, gridLineColor: '#eef1f5', gridLineWidth: 1, labels: { style: { color: '#78909c', fontSize: '10px' }, ...yLabels } },
       legend: { enabled: series.length > 1, itemStyle: { fontSize: '11px' } },
       tooltip: {
         shared: true,
@@ -662,7 +691,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
           return `<b>${this.x}</b><br/>${this.points?.map((p: any) => `${p.series.name}: ${tooltipFormat(p.y)}`).join('<br/>') ?? tooltipFormat(this.y)}`;
         }
       },
-      plotOptions: { spline: { marker: { enabled: true, radius: 3, symbol: 'circle', lineWidth: 0 }, lineWidth: 2.5 } },
+      plotOptions: { spline: { lineWidth: 2, marker: { enabled: false } } },
       series: series.map((s) => ({ type: 'spline' as const, name: s.name, color: s.color, data: s.data }))
     };
   }
@@ -683,6 +712,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       yAxis: {
         title: { text: undefined },
         gridLineColor: '#eef1f5',
+        gridLineWidth: 1,
         labels: { style: { color: '#78909c', fontSize: '10px' }, ...(yLabels ?? {}) }
       },
       legend: { enabled: false },
@@ -693,7 +723,13 @@ export class QueuePanelComponent implements OnInit, OnChanges {
             }
           }
         : {},
-      plotOptions: { column: { borderRadius: 3, pointPadding: 0.1, groupPadding: 0.12 } },
+      // borderWidth: 0 alone doesn't fully suppress the column outline -
+      // Highcharts 13's default border color is an undefined CSS var this
+      // app never defines (var(--highcharts-background-color)), which some
+      // rendering paths (crisp pixel-snapped edges) still paint with,
+      // showing as a black rim. Pinning borderColor to the bar's own fill
+      // makes any residual edge blend in instead.
+      plotOptions: { column: { borderRadius: 3, borderWidth: 1, borderColor: color, pointPadding: 0.1, groupPadding: 0.12 } },
       series: [{ type: 'column', name, color, data }]
     };
   }
@@ -701,7 +737,9 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   // Independent month browser (like the main Calendar tab's prev/today/next)
   // - fetches the full selected calendar month's daily rows for this widget,
   // separate from the filter-driven range above, so browsing months doesn't
-  // disturb the KPI tiles/charts/tables.
+  // disturb the KPI tiles/charts/tables. Still reads the top filter's Hours
+  // toggle on every fetch, so switching Operational/24 Hours and hitting
+  // Apply changes the calendar's data too, not just the charts above it.
   private fetchCalendarMonth(): void {
     if (!this.queueWidget || !this.queueGroup) {
       return;
@@ -712,21 +750,24 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
     const from = `${this.formatDate(monthStart)} 00:00:00`;
     const to = `${this.formatDate(monthEnd)} 23:59:59`;
+    const operationalHours = this.filterForm.value.operationalHours;
 
     this.calendarMonthLoading = true;
     this.calendarMonthError = '';
 
-    this.kpiService.postKpiData(buildKpiDataPayload(widget, group, from, to, undefined, 'dayOfMonth', 'month')).subscribe({
-      next: (res) => {
-        this.calendarMonthLoading = false;
-        const rows = this.rowsFromFilters(res.data.dataFilter, monthStart, monthEnd);
-        this.buildCalendarWeeks(monthStart, monthEnd, rows);
-      },
-      error: () => {
-        this.calendarMonthLoading = false;
-        this.calendarMonthError = 'Unable to load calendar data. Please check the API connection and try again.';
-      }
-    });
+    this.kpiService
+      .postKpiData(buildKpiDataPayload(widget, group, from, to, undefined, 'dayOfMonth', 'month', operationalHours))
+      .subscribe({
+        next: (res) => {
+          this.calendarMonthLoading = false;
+          const rows = this.rowsFromFilters(res.data.dataFilter, monthStart, monthEnd);
+          this.buildCalendarWeeks(monthStart, monthEnd, rows);
+        },
+        error: () => {
+          this.calendarMonthLoading = false;
+          this.calendarMonthError = 'Unable to load calendar data. Please check the API connection and try again.';
+        }
+      });
   }
 
   // One cell per calendar day, padded to full Sun-Sat weeks before/after the

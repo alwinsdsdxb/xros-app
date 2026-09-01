@@ -109,6 +109,7 @@
         </div>
       </div>
 
+      <div class="calendar-grid-scroll">
       <div class="calendar-grid">
         <div class="grid-header-row">
           <div class="grid-cell header-cell week-col">Week</div>
@@ -124,6 +125,7 @@
             *ngFor="let day of week.days"
             [class.out-month]="!day.inMonth"
             [class.clickable]="selectedMetric === 'footfall' && day.inMonth && day.value !== null"
+            [ngClass]="dayIntensityClass(day)"
             (click)="openHourlyDetail(day)"
           >
             <div class="cell-date-row">
@@ -233,6 +235,7 @@
             </div>
           </div>
         </div>
+      </div>
       </div>
     </ng-container>
   </mat-card>

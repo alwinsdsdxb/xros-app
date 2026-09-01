@@ -68,3 +68,15 @@
   color: var(--ink-muted);
   padding: 4px 0;
 }
+
+@media (max-width: 600px) {
+  .campaigns-header {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  .campaign-card {
+    min-width: 170px;
+    padding: 8px 12px;
+  }
+}

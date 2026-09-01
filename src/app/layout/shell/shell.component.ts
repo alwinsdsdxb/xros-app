@@ -21,6 +21,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   currentUser: AuthUser | null = null;
   pageTitle = 'Analytics Dashboard';
   storeName = 'All Stores';
+  mobileNavOpen = false;
 
   readonly primaryNav: NavItem[] = [{ label: 'XR Dashboard™', route: '/dashboard' }];
 
@@ -63,7 +64,10 @@ export class ShellComponent implements OnInit, OnDestroy {
         filter((event) => event instanceof NavigationEnd),
         takeUntil(this.destroy$)
       )
-      .subscribe(() => this.updatePageTitle());
+      .subscribe(() => {
+        this.updatePageTitle();
+        this.mobileNavOpen = false;
+      });
 
     this.updatePageTitle();
   }
@@ -71,6 +75,14 @@ export class ShellComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  toggleMobileNav(): void {
+    this.mobileNavOpen = !this.mobileNavOpen;
+  }
+
+  closeMobileNav(): void {
+    this.mobileNavOpen = false;
   }
 
   signOut(): void {

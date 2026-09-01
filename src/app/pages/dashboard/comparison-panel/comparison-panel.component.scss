@@ -487,3 +487,24 @@
     padding: 18px;
   }
 }
+
+@media (max-width: 600px) {
+  .comparison-kpi-tile,
+  .summary-tile {
+    padding: 16px 18px;
+  }
+
+  .comparison-kpi-tile .stat-value,
+  .summary-tile .stat-value {
+    font-size: 28px;
+  }
+
+  .chart-card,
+  .periodic-card {
+    padding: 14px !important;
+  }
+
+  .filter-box {
+    padding: 8px 12px;
+  }
+}

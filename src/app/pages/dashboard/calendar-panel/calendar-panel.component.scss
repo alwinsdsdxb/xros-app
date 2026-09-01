@@ -233,6 +233,13 @@
   margin-bottom: 0;
 }
 
+// Calendar grid is spatial (week/weekday layout) so on narrow screens it
+// scrolls horizontally rather than squashing columns unreadably thin.
+.calendar-grid-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* 9-column grid: week label, 7 weekdays, week total */
 .calendar-grid {
   display: grid;
@@ -242,6 +249,7 @@
   border: 1px solid var(--gridline);
   border-radius: 12px;
   overflow: hidden;
+  min-width: 640px;
 }
 
 .grid-header-row,
@@ -308,10 +316,14 @@
   background: #f8fbf8;
 }
 
-.grid-week-row > .day-cell:nth-child(2),
-.grid-week-row > .day-cell:nth-child(8) {
-  background: #fbf2f0;
-}
+// Sequential heat scale (one hue, light -> dark) shading each day by where
+// its count falls within the visible month - see dayIntensityClass() in the
+// component. Kept light throughout (never past ~b5d3e8) so the day-value
+// number and LM/LY comparison text stay readable at every step.
+.day-cell.intensity-0 { background: #f0f6fa; }
+.day-cell.intensity-1 { background: #e0edf6; }
+.day-cell.intensity-2 { background: #cce1f0; }
+.day-cell.intensity-3 { background: #b5d3e8; }
 
 .day-cell.out-month {
   background: #f4f6f8 !important;
@@ -458,6 +470,48 @@
 @media (max-width: 900px) {
   .calendar-summary-row {
     grid-template-columns: 1fr;
+  }
+
+  .metric-toggle {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+
+  .metric-btn {
+    flex: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .calendar-page {
+    gap: 14px;
+  }
+
+  .calendar-nav-row {
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+  }
+
+  .nav-controls {
+    flex-wrap: wrap;
+  }
+
+  .month-select {
+    min-width: 130px;
+  }
+
+  .hourly-modal-backdrop {
+    padding: 12px;
+  }
+
+  .hourly-modal {
+    padding: 16px;
+  }
+
+  .hourly-modal-date-row {
+    flex-wrap: wrap;
   }
 }
 

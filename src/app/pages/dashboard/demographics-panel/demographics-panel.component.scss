@@ -33,7 +33,7 @@
   padding: 20px;
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 900px) {
   .demographics-grid {
     grid-template-columns: 1fr;
   }
@@ -56,6 +56,8 @@
 
 .gender-donut {
   flex: none;
+  width: 220px;
+  height: 220px;
 }
 
 .donut-wrap {
@@ -193,4 +195,25 @@
   min-width: 30px;
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .demo-block {
+    padding: 14px;
+  }
+
+  // Legend needs a real min-width (not the desktop 0) so the row wraps
+  // below the donut instead of squeezing "Male"/"Female" + % into a sliver.
+  .gender-row {
+    flex-wrap: wrap;
+  }
+
+  .gender-donut {
+    width: 160px;
+    height: 160px;
+  }
+
+  .gender-legend {
+    min-width: 140px;
+  }
 }
