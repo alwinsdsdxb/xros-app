@@ -78,8 +78,8 @@ export class DwellPanelComponent implements OnChanges {
       },
       {
         label: 'Visitors in Analysis',
-        value: `${d.visitorsInAnalysis.value}`,
-        previousDay: `${d.visitorsInAnalysis.previousDay}`,
+        value: d.visitorsInAnalysis.value.toLocaleString('en-US'),
+        previousDay: d.visitorsInAnalysis.previousDay.toLocaleString('en-US'),
         changePct: d.visitorsInAnalysis.changePct
       }
     ];
@@ -159,7 +159,7 @@ export class DwellPanelComponent implements OnChanges {
       // bounding box can't drift the way Highcharts' title alignment did.
       title: { text: undefined },
       credits: { enabled: false },
-      tooltip: { pointFormat: '{point.name}: <b>{point.y}</b> visits ({point.percentage:.1f}%)' },
+      tooltip: { pointFormat: '{point.name}: <b>{point.percentage:.1f}%</b>' },
       plotOptions: {
         pie: {
           innerSize: '72%',
@@ -224,7 +224,7 @@ export class DwellPanelComponent implements OnChanges {
         {
           type: 'area',
           name: 'Previous Day',
-          color: '#78909c',
+          color: '#e3a73c',
           dashStyle: 'ShortDash',
           fillOpacity: 0,
           data: points.map((p) => p.previousDay)

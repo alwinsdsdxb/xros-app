@@ -921,7 +921,7 @@ export class DashboardComponent implements OnInit {
     this.funnelStages = [
       { label: 'Potential Customers', value: this.passerByMetric?.value ?? 0 },
       { label: 'Total Traffic', value: this.footfallMetric?.value ?? 0 },
-      { label: 'Unique Visitors', value: this.uniqueFootfallMetric?.value ?? 0 },
+      { label: 'Unique Footfall', value: this.uniqueFootfallMetric?.value ?? 0 },
       { label: 'Potential Buyers', value: this.groupsMetric?.value ?? 0 },
       { label: 'Sales Conversion', value: 0 },
       { label: 'Loyalty Transactions', value: 0 }

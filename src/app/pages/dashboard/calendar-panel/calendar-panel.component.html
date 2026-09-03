@@ -283,7 +283,7 @@
           <div class="hourly-time">{{ r.label }}</div>
           <div class="hourly-track">
             <div class="hourly-fill" [style.width.%]="r.pct" [style.background]="r.color">
-              <span class="hourly-fill-value">{{ r.value }}</span>
+              <span class="hourly-fill-value">{{ r.value | number }}</span>
             </div>
           </div>
           <div class="hourly-total">{{ r.value | number }} visitors</div>

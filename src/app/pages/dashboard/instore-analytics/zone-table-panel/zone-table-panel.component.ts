@@ -135,7 +135,7 @@ export class ZoneTablePanelComponent implements OnChanges {
             if (isDuration) {
               return formatDuration(value);
             }
-            return isPct ? `${value}%` : `${value}`;
+            return isPct ? `${value}%` : value.toLocaleString('en-US');
           }
         }
       },

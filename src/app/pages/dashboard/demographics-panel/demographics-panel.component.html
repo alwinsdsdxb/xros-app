@@ -12,10 +12,6 @@
               [oneToOne]="true"
               style="display: block; width: 100%; height: 100%"
             ></highcharts-chart>
-            <div class="donut-center-label" *ngIf="d.gender as g">
-              <span class="donut-center-value">{{ g.male + g.female | number }}</span>
-              <span class="donut-center-caption">VISITORS</span>
-            </div>
           </div>
           <div class="gender-legend">
             <div class="legend-row">

@@ -137,8 +137,21 @@
   align-self: center;
 }
 
+// flex-shrink:0 (not just a wider flex-basis) - .filter-field's own
+// flex:0 1 100px shorthand leaves shrink:1, so under layout pressure these
+// boxes were shrinking back down toward .filter-field's 80px min-width
+// despite the wider basis, still clipping long store/scope names.
 .scope-field {
-  flex-basis: 100px;
+  flex: 0 0 300px;
+  min-width: 300px;
+}
+
+// Dashboard/tenant names (e.g. "Dubai Hills Mall") run longer than a fixed
+// 100px box - .filter-field's default basis clips them, so this needs its
+// own wider, non-shrinking basis to stay fully visible.
+.dashboard-field {
+  flex: 0 0 300px;
+  min-width: 300px;
 }
 
 // The Scope box has no visible input outline in the reference design - it
@@ -318,9 +331,7 @@
   border: 1px solid #e6eaec;
   border-radius: 10px;
   padding: 28px;
-  box-shadow:
-    0 6px 16px rgba(38, 50, 56, 0.1),
-    0 2px 6px rgba(38, 50, 56, 0.08);
+  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14);
 }
 
 @media (max-width: 600px) {
@@ -348,9 +359,7 @@
   border-radius: 8px;
   padding: 6px 10px;
   text-align: right;
-  box-shadow:
-    0 6px 16px rgba(38, 50, 56, 0.1),
-    0 2px 6px rgba(38, 50, 56, 0.08);
+  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14);
 }
 
 .badge-date {

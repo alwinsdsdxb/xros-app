@@ -12,6 +12,45 @@
     </div>
   </div>
 
+  <div class="peak-kpi-chip-row">
+    <div class="peak-kpi-chip">
+      <mat-icon class="peak-kpi-icon">calendar_today</mat-icon>
+      <div>
+        <div class="peak-kpi-label">Date Range</div>
+        <div class="peak-kpi-value" *ngIf="dateFrom && dateTo">{{ dateFrom | date: 'dd MMM' }} - {{ dateTo | date: 'dd MMM y' }}</div>
+        <div class="peak-kpi-value" *ngIf="!dateFrom || !dateTo">&mdash;</div>
+      </div>
+    </div>
+    <div class="peak-kpi-chip">
+      <span class="peak-kpi-tag">TF</span>
+      <div>
+        <div class="peak-kpi-label">Total Footfall</div>
+        <div class="peak-kpi-value">{{ totalFootfall !== null ? (totalFootfall | number) : '—' }}</div>
+      </div>
+    </div>
+    <div class="peak-kpi-chip">
+      <span class="peak-kpi-tag">UF</span>
+      <div>
+        <div class="peak-kpi-label">Unique Footfall</div>
+        <div class="peak-kpi-value">{{ uniqueFootfall !== null ? (uniqueFootfall | number) : '—' }}</div>
+      </div>
+    </div>
+    <div class="peak-kpi-chip">
+      <span class="peak-kpi-tag">M</span>
+      <div>
+        <div class="peak-kpi-label">Male</div>
+        <div class="peak-kpi-value">{{ male !== null ? (male | number) : '—' }}</div>
+      </div>
+    </div>
+    <div class="peak-kpi-chip">
+      <span class="peak-kpi-tag">F</span>
+      <div>
+        <div class="peak-kpi-label">Female</div>
+        <div class="peak-kpi-value">{{ female !== null ? (female | number) : '—' }}</div>
+      </div>
+    </div>
+  </div>
+
   <div class="peak-stats-row">
     <div class="peak-stat">
       <div class="stat-label">Best Slot</div>

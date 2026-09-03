@@ -5,8 +5,6 @@ import 'highcharts/es-modules/masters/modules/exporting.src';
 import 'highcharts/es-modules/masters/modules/offline-exporting.src';
 import { PeakHours } from '../../../../core/models/instore-analytics.model';
 
-const DEFAULT_MAX_COLOR = '#0f4c73';
-
 @Component({
   selector: 'app-peak-hours-panel',
   templateUrl: './peak-hours-panel.component.html',
@@ -14,6 +12,12 @@ const DEFAULT_MAX_COLOR = '#0f4c73';
 })
 export class PeakHoursPanelComponent implements OnChanges {
   @Input() peakHours: PeakHours | null = null;
+  @Input() dateFrom: Date | null = null;
+  @Input() dateTo: Date | null = null;
+  @Input() totalFootfall: number | null = null;
+  @Input() uniqueFootfall: number | null = null;
+  @Input() male: number | null = null;
+  @Input() female: number | null = null;
 
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};
@@ -82,8 +86,11 @@ export class PeakHoursPanelComponent implements OnChanges {
       },
       colorAxis: {
         min: 0,
-        minColor: '#ffffff',
-        maxColor: p.color || DEFAULT_MAX_COLOR
+        stops: [
+          [0, '#ffee58'],
+          [0.5, '#fb8c00'],
+          [1, '#c62828']
+        ]
       },
       legend: {
         enabled: true,
@@ -96,7 +103,7 @@ export class PeakHoursPanelComponent implements OnChanges {
       },
       tooltip: {
         formatter(this: any): string {
-          return `<b>${days[this.point.y]} - ${hours[this.point.x]}</b><br/><b>${this.point.value}</b>`;
+          return `<b>${days[this.point.y]} - ${hours[this.point.x]}</b><br/><b>${(this.point.value ?? 0).toLocaleString('en-US')}</b>`;
         }
       },
       exporting: {

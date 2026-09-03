@@ -42,6 +42,23 @@
   --mdc-outlined-text-field-hover-outline-color: #f8fafb;
 }
 
+// flex-shrink:0 (not just a wider flex-basis) - .filter-field's own
+// flex:0 1 100px shorthand leaves shrink:1, so under layout pressure these
+// boxes were shrinking back down toward .filter-field's 80px min-width
+// despite the wider basis, still clipping long store/scope names.
+.scope-field {
+  flex: 0 0 300px;
+  min-width: 300px;
+}
+
+// Dashboard/tenant names (e.g. "Dubai Hills Mall") run longer than a fixed
+// 100px box - .filter-field's default basis clips them, so this needs its
+// own wider, non-shrinking basis to stay fully visible.
+.dashboard-field {
+  flex: 0 0 300px;
+  min-width: 300px;
+}
+
 ::ng-deep .filter-field .mat-mdc-text-field-wrapper {
   height: 34px;
 }
@@ -63,7 +80,8 @@
 }
 
 .store-field {
-  flex-basis: 100px;
+  flex: 0 0 300px;
+  min-width: 300px;
 }
 
 .date-range-input {

@@ -35,17 +35,17 @@ interface StagePreset {
 // count falls back to generic, fully data-driven presentation below instead
 // of forcing a 6-stage design onto a different-shaped funnel.
 const STAGE_PRESETS: StagePreset[] = [
-  { label: 'POTENTIAL CUSTOMERS', color: '#F15B24', describe: () => 'Storefront traffic baseline' },
-  { label: 'TOTAL TRAFFIC', color: '#B2C617', describe: (value, values) => `${pctOf(value, values[0])}% of potential customers` },
-  { label: 'UNIQUE VISITORS', color: '#F3A313', describe: (value, values) => `${pctOf(value, values[1])}% of total traffic` },
-  { label: 'POTENTIAL BUYERS', color: '#2F708F', describe: () => 'One potential buyer per visitor group' },
+  { label: 'Potential Customers', color: '#F15B24', describe: () => 'Storefront traffic baseline' },
+  { label: 'Total Traffic', color: '#B2C617', describe: (value, values) => `${pctOf(value, values[0])}% of potential customers` },
+  { label: 'Unique Footfall', color: '#F3A313', describe: (value, values) => `${pctOf(value, values[1])}% of total traffic` },
+  { label: 'Potential Buyers', color: '#2F708F', describe: () => 'One potential buyer per visitor group' },
   {
-    label: 'SALES CONVERSION',
+    label: 'Sales Conversion',
     color: '#22958D',
-    secondaryLabel: 'TRANSACTIONS',
+    secondaryLabel: 'Transactions',
     describe: (value, values) => `${pctOf(value, values[2])}% sales conversion`
   },
-  { label: 'LOYALTY TRANSACTIONS', color: '#71808F', describe: (value, values) => `${pctOf(value, values[4])}% of transactions` }
+  { label: 'Loyalty Transactions', color: '#71808F', describe: (value, values) => `${pctOf(value, values[4])}% of transactions` }
 ];
 
 // Fallback palette for a funnel that isn't exactly these 6 stages - cycles by

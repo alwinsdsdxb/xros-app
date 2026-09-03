@@ -62,22 +62,22 @@
 
     <div class="forecast-stat-row">
       <div class="stat-tile">
-        <div class="stat-label">30 DAY FORECAST</div>
+        <div class="stat-label">30 Day Forecast</div>
         <div class="stat-value">{{ d.totalForecast | number }}</div>
         <div class="stat-sub">Predicted visitors</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-label">DAILY AVERAGE</div>
+        <div class="stat-label">Daily Average</div>
         <div class="stat-value">{{ d.dailyAverage | number }}</div>
         <div class="stat-sub">Visitors per day</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-label">PEAK FORECAST DAY</div>
+        <div class="stat-label">Peak Forecast Day</div>
         <div class="stat-value">{{ d.peakForecastDay.dayLabel }}</div>
         <div class="stat-sub">{{ d.peakForecastDay.value | number }} visitors</div>
       </div>
       <div class="stat-tile">
-        <div class="stat-label">SCENARIO DAYS</div>
+        <div class="stat-label">Scenario Days</div>
         <div class="stat-value">{{ d.scenarioDays }}</div>
         <div class="stat-sub">Holiday, weekend or payday</div>
       </div>

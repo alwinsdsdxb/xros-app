@@ -60,11 +60,11 @@
 .matrix-header,
 .matrix-row {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr 1fr;
   gap: 8px;
   align-items: center;
   padding: 10px 4px;
-  min-width: 560px;
+  min-width: 660px;
 }
 
 .matrix-header {

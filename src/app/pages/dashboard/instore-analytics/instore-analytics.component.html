@@ -105,16 +105,6 @@
       </div>
     </div>
 
-    <app-peak-hours-panel [peakHours]="peakHoursForPanel"></app-peak-hours-panel>
-
-    <app-floor-plan-panel [data]="floorPlanForPanel"></app-floor-plan-panel>
-
-    <app-zone-table-panel [zones]="zonesForPanel" [highlights]="zoneHighlightsForPanel"></app-zone-table-panel>
-
-    <app-zone-correlation-panel [correlation]="zoneCorrelationForPanel" [zones]="zonesForPanel"></app-zone-correlation-panel>
-
-    <app-trial-rooms-panel [proxy]="trialRoomProxyForPanel"></app-trial-rooms-panel>
-
     <div class="bottom-row" *ngIf="audienceMixForPanel as a">
       <mat-card class="xros-card">
         <div class="page-section-title">Audience Mix</div>
@@ -143,15 +133,15 @@
         <div class="bottom-list">
           <div class="bottom-row-item">
             <span>Peak Days</span>
-            <span class="bottom-value">{{ t.peakDays }}</span>
+            <span class="bottom-value">{{ t.peakDays | number }}</span>
           </div>
           <div class="bottom-row-item">
             <span>Normal Days</span>
-            <span class="bottom-value">{{ t.normalDays }}</span>
+            <span class="bottom-value">{{ t.normalDays | number }}</span>
           </div>
           <div class="bottom-row-item">
             <span>Low Days</span>
-            <span class="bottom-value">{{ t.lowDays }}</span>
+            <span class="bottom-value">{{ t.lowDays | number }}</span>
           </div>
           <div class="bottom-row-item">
             <span>Busiest Day</span>
@@ -160,5 +150,23 @@
         </div>
       </mat-card>
     </div>
+
+    <app-peak-hours-panel
+      [peakHours]="peakHoursForPanel"
+      [dateFrom]="campaignsRangeFrom"
+      [dateTo]="campaignsRangeTo"
+      [totalFootfall]="footfallTotal"
+      [uniqueFootfall]="uniqueFootfallTotal"
+      [male]="maleTotal"
+      [female]="femaleTotal"
+    ></app-peak-hours-panel>
+
+    <app-floor-plan-panel [data]="floorPlanForPanel"></app-floor-plan-panel>
+
+    <app-zone-table-panel [zones]="zonesForPanel" [highlights]="zoneHighlightsForPanel"></app-zone-table-panel>
+
+    <app-zone-correlation-panel [correlation]="zoneCorrelationForPanel" [zones]="zonesForPanel"></app-zone-correlation-panel>
+
+    <app-trial-rooms-panel [proxy]="trialRoomProxyForPanel"></app-trial-rooms-panel>
   </div>
 </div>

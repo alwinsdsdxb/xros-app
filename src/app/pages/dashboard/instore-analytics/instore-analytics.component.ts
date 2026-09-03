@@ -129,10 +129,13 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   private maleWidget: Widget | null = null;
   private femaleWidget: Widget | null = null;
   private funnelWidget: Widget | null = null;
-  private footfallTotal: number | null = null;
-  private uniqueFootfallTotal: number | null = null;
-  private maleTotal: number | null = null;
-  private femaleTotal: number | null = null;
+  // Public (not private) so the Peak Hours panel can bind them directly as
+  // KPI chips (TF/UF/Male/Female) alongside its heatmap - same totals
+  // already used for the KPI strip above, just also surfaced here.
+  footfallTotal: number | null = null;
+  uniqueFootfallTotal: number | null = null;
+  maleTotal: number | null = null;
+  femaleTotal: number | null = null;
   private adultTotal: number | null = null;
   private kpiRangeDays = 0;
   private kpiWeekendDays = 0;

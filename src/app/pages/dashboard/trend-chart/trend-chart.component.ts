@@ -79,7 +79,10 @@ export class TrendChartComponent implements OnChanges {
         labels: { style: { color: '#78909c', fontSize: '11px' } }
       },
       legend: { enabled: false },
-      tooltip: { shared: true },
+      tooltip: {
+        shared: true,
+        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y:,.0f}</b><br/>'
+      },
       plotOptions: {
         spline: {
           marker: { enabled: true, radius: 3, symbol: 'circle', lineWidth: 0 },

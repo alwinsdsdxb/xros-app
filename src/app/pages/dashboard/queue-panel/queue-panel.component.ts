@@ -142,8 +142,15 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   // Highcharts 13 defaults chart.backgroundColor to a CSS var this app never
   // defines, which resolves to solid black - so even these placeholder
   // pre-data options need an explicit transparent background, not just the
-  // real ones built in buildCharts().
-  private readonly emptyChartOptions: Highcharts.Options = { chart: { backgroundColor: 'transparent' } };
+  // real ones built in buildCharts(). title.text also needs to be explicitly
+  // undefined here - Highcharts' own default (unset title) renders as the
+  // literal text "Chart title", which otherwise flashes on initial render
+  // until buildCharts() replaces these placeholder options with the real
+  // ones (which already set title: { text: undefined }).
+  private readonly emptyChartOptions: Highcharts.Options = {
+    chart: { backgroundColor: 'transparent' },
+    title: { text: undefined }
+  };
   trendChartOptions: Highcharts.Options = this.emptyChartOptions;
   targetChartOptions: Highcharts.Options = this.emptyChartOptions;
   demandChartOptions: Highcharts.Options = this.emptyChartOptions;
@@ -640,7 +647,14 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       ]
     };
 
-    this.demandChartOptions = this.barChart(categories, 'Queue Count', QUEUE_CHART_COLORS.queueCount, rows.map((r) => r.queueCount));
+    this.demandChartOptions = this.barChart(
+      categories,
+      'Queue Count',
+      QUEUE_CHART_COLORS.queueCount,
+      rows.map((r) => r.queueCount),
+      undefined,
+      (v) => v.toLocaleString('en-US')
+    );
 
     this.ratioChartOptions = this.lineChart(
       categories,
@@ -660,7 +674,9 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       categories,
       'Customer-Minutes',
       QUEUE_CHART_COLORS.waitingLoad,
-      rows.map((r) => Math.round((r.queueCount * r.queueTimeSec) / 60))
+      rows.map((r) => Math.round((r.queueCount * r.queueTimeSec) / 60)),
+      undefined,
+      (v) => v.toLocaleString('en-US')
     );
 
     this.processingChartOptions = this.lineChart(

@@ -188,7 +188,7 @@
             <div class="detail-grid">
               <div class="detail-item">
                 <span class="detail-label">Avg. Queue Length</span>
-                <span class="detail-value">{{ sel.queueLength }}</span>
+                <span class="detail-value">{{ formatCount(sel.queueLength) }}</span>
               </div>
               <div class="detail-item">
                 <span class="detail-label">Queue Count</span>
@@ -229,7 +229,7 @@
           <tbody>
             <tr *ngFor="let r of dailyRows">
               <td>{{ r.isoDate }}</td>
-              <td>{{ r.queueLength }}</td>
+              <td>{{ formatCount(r.queueLength) }}</td>
               <td>{{ formatCount(r.queueCount) }}</td>
               <td>{{ formatDuration(r.queueTimeSec) }}</td>
               <td>{{ formatDuration(r.serviceTimeSec) }}</td>

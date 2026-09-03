@@ -63,7 +63,7 @@ export class DemographicsPanelComponent implements OnChanges {
       title: { text: undefined },
       credits: { enabled: false },
       tooltip: {
-        pointFormat: '{series.name}: <b>{point.y}</b> ({point.percentage:.1f}%)',
+        pointFormat: '{series.name}: <b>{point.percentage:.1f}%</b>',
         backgroundColor: '#ffffff',
         borderColor: '#e6eaec',
         borderRadius: 8,

@@ -699,7 +699,10 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
         symbolWidth: 10,
         symbolRadius: 5
       },
-      tooltip: { shared: true },
+      tooltip: {
+        shared: true,
+        pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y:,.0f}</b><br/>'
+      },
       plotOptions: {
         column: {
           borderRadius: 3,

@@ -8,7 +8,7 @@
 // (KPI tiles, chart cards, tables) instead of the app-wide .xros-card's much
 // heavier default shadow, with a light bluish-black border tint per feedback.
 .queue-page ::ng-deep .xros-card {
-  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.16) !important;
+  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14) !important;
   border: 1px solid #eef2f6 !important;
 }
 
@@ -25,9 +25,7 @@
   border: 1px solid #e6eaec;
   border-radius: 10px;
   padding: 28px;
-  box-shadow:
-    0 6px 16px rgba(38, 50, 56, 0.1),
-    0 2px 6px rgba(38, 50, 56, 0.08);
+  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14);
 }
 
 @media (max-width: 600px) {
@@ -110,9 +108,20 @@
   align-self: center;
 }
 
-.scope-field,
+// flex-shrink:0 (not just a wider flex-basis) - .filter-field's own
+// flex:0 1 100px shorthand leaves shrink:1, so under layout pressure these
+// boxes were shrinking back down toward .filter-field's 80px min-width
+// despite the wider basis, still clipping long store/scope names.
+.scope-field {
+  flex: 0 0 300px;
+  min-width: 300px;
+}
+
+// Dashboard/tenant names (e.g. "Dubai Hills Mall") run longer than 120px -
+// needs its own wider, non-shrinking basis to stay fully visible.
 .dashboard-field {
-  flex-basis: 120px;
+  flex: 0 0 300px;
+  min-width: 300px;
 }
 
 .date-range-field {
@@ -234,7 +243,7 @@
   border: 1px solid #eef2f6;
   border-radius: 10px;
   padding: 12px 14px;
-  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.16);
+  box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14);
 }
 
 .tile-header {

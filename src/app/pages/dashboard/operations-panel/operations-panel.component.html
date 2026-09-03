@@ -38,7 +38,7 @@
       <span class="ops-icon-badge ops-icon-badge-good"><mat-icon class="ops-icon icon-good">wifi</mat-icon></span>
       <div>
         <div class="ops-label">Devices Online</div>
-        <div class="ops-value">{{ o.devicesOnline }}</div>
+        <div class="ops-value">{{ o.devicesOnline | number }}</div>
         <div class="ops-sub">Active capture devices</div>
       </div>
     </div>
@@ -47,7 +47,7 @@
       <span class="ops-icon-badge ops-icon-badge-bad"><mat-icon class="ops-icon icon-bad">wifi_off</mat-icon></span>
       <div>
         <div class="ops-label">Devices Offline</div>
-        <div class="ops-value">{{ o.devicesOfflineCount }}</div>
+        <div class="ops-value">{{ o.devicesOfflineCount | number }}</div>
         <div class="ops-sub">{{ o.devicesOfflineCount > 0 ? 'Needs field check' : 'All devices reporting' }}</div>
       </div>
     </div>

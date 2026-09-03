@@ -8,6 +8,7 @@ export interface MetricMatrixRow {
   key: string;
   label: string;
   traffic: number;
+  uniqueFootfall: number;
   sharePct: number;
   capturePct: number;
   dwellSeconds: number;
@@ -57,6 +58,7 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
       key: z.key,
       label: z.label,
       traffic: z.traffic,
+      uniqueFootfall: z.visitors,
       sharePct: z.sharePct,
       capturePct: z.traffic > 0 ? Math.round((z.attentionVisitors / z.traffic) * 100) : 0,
       dwellSeconds: z.avgResidenceTime,
@@ -150,7 +152,7 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
       title: { text: undefined },
       credits: { enabled: false },
       tooltip: {
-        pointFormat: '{point.fromNode.name} ↔ {point.toNode.name}: <b>{point.weight}</b>'
+        pointFormat: '{point.fromNode.name} ↔ {point.toNode.name}: <b>{point.weight:,.0f}</b>'
       },
       series: [
         {

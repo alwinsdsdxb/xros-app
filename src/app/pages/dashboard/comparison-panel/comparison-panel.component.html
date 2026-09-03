@@ -104,19 +104,6 @@
       </div>
     </div>
 
-    <div class="xros-card chart-card">
-      <div class="chart-header">
-        <div class="chart-title">Daily Distribution</div>
-        <div class="chart-sub">{{ currentRangeLabel }} vs {{ previousRangeLabel }}</div>
-      </div>
-      <highcharts-chart
-        [Highcharts]="Highcharts"
-        [options]="chartOptions"
-        [oneToOne]="true"
-        style="display: block; width: 100%; height: 320px"
-      ></highcharts-chart>
-    </div>
-
     <div class="summary-tile-row">
       <div class="xros-card summary-tile">
         <div class="stat-label">Busiest Day</div>
@@ -138,6 +125,19 @@
         <div class="stat-value">{{ weekdayAverage.value | number }}</div>
         <div class="stat-sub">{{ weekdayAverage.sub }}</div>
       </div>
+    </div>
+
+    <div class="xros-card chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Daily Distribution</div>
+        <div class="chart-sub">{{ currentRangeLabel }} vs {{ previousRangeLabel }}</div>
+      </div>
+      <highcharts-chart
+        [Highcharts]="Highcharts"
+        [options]="chartOptions"
+        [oneToOne]="true"
+        style="display: block; width: 100%; height: 320px"
+      ></highcharts-chart>
     </div>
 
     <div class="xros-card periodic-card">
