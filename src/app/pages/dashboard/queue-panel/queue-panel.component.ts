@@ -215,6 +215,25 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     return `${mm}:${ss.toString().padStart(2, '0')}`;
   }
 
+  // Small stat strip below the calendar grid, summarizing the currently
+  // viewed month (calendarRows) independently of the filter-driven KPI tiles
+  // above, which cover the top filter bar's own View/Date Range instead.
+  get calendarSummaryTiles(): { label: string; icon: string; valueLabel: string }[] {
+    const rows = this.calendarRows;
+    const n = rows.length || 1;
+    const avgQueueTimeSec = Math.round(rows.reduce((s, r) => s + r.queueTimeSec, 0) / n);
+    const avgServiceTimeSec = Math.round(rows.reduce((s, r) => s + r.serviceTimeSec, 0) / n);
+    const avgQueueLength = rows.reduce((s, r) => s + r.queueLength, 0) / n;
+    const totalQueueCount = rows.reduce((s, r) => s + r.queueCount, 0);
+
+    return [
+      { label: 'Avg. Queue Time', icon: 'schedule', valueLabel: this.formatDuration(avgQueueTimeSec) },
+      { label: 'Avg. Service Time', icon: 'support_agent', valueLabel: this.formatDuration(avgServiceTimeSec) },
+      { label: 'Avg. Queue Length', icon: 'groups', valueLabel: this.formatCount(avgQueueLength) },
+      { label: 'Total Queue Count', icon: 'confirmation_number', valueLabel: this.formatCount(totalQueueCount) }
+    ];
+  }
+
   cellIntensity(row: QueueDayRow): number {
     const max = Math.max(1, ...this.calendarRows.map((r) => this.cellValue(r)));
     return Math.min(CALENDAR_INTENSITY_BUCKETS - 1, Math.floor((this.cellValue(row) / max) * CALENDAR_INTENSITY_BUCKETS));

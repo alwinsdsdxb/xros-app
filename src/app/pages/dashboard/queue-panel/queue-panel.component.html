@@ -131,6 +131,16 @@
             </div>
           </ng-container>
         </div>
+
+        <div class="calendar-summary-strip">
+          <div class="calendar-summary-tile" *ngFor="let t of calendarSummaryTiles">
+            <mat-icon class="summary-tile-icon">{{ t.icon }}</mat-icon>
+            <div class="summary-tile-text">
+              <span class="summary-tile-label">{{ t.label }}</span>
+              <span class="summary-tile-value">{{ t.valueLabel }}</span>
+            </div>
+          </div>
+        </div>
       </ng-container>
     </mat-card>
 
