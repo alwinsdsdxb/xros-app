@@ -926,6 +926,17 @@ export class DashboardComponent implements OnInit {
       { label: 'Sales Conversion', value: 0 },
       { label: 'Loyalty Transactions', value: 0 }
     ];
+    // Adult/Child isn't its own widget - the Funnel widget's raw response
+    // (already fetched for the funnel chart above) carries an "Adult" entry
+    // on this tenant, same speculative source Instore Analytics' Audience
+    // Mix already reuses. Recomputed here since both inputs (rawFunnelStages,
+    // uniqueFootfallMetric) update through this same method.
+    this.refreshDemographicsForPanel();
+  }
+
+  private get adultTotal(): number | null {
+    const entry = this.rawFunnelStages.find((s) => s.label.trim().toLowerCase() === 'adult');
+    return entry ? entry.value : null;
   }
 
   // Unlike Total Footfall/Trend Report (real distinct per-entrance door
@@ -1067,6 +1078,12 @@ export class DashboardComponent implements OnInit {
     const total = this.maleCount + this.femaleCount;
     const { solo, twoPerson, threePlus } = this.groupSizeCounts;
     const groupTotal = solo + twoPerson + threePlus;
+
+    const adult = this.adultTotal;
+    const uniqueFootfall = this.uniqueFootfallMetric?.value ?? null;
+    const child = adult !== null && uniqueFootfall !== null ? Math.max(uniqueFootfall - adult, 0) : null;
+    const adultChildTotal = adult !== null && child !== null ? adult + child : 0;
+
     this.demographicsForPanel = {
       totalVisitors: total,
       gender: {
@@ -1080,7 +1097,16 @@ export class DashboardComponent implements OnInit {
         solo: { value: solo, pct: groupTotal > 0 ? Math.round((solo / groupTotal) * 100) : 0 },
         twoPerson: { value: twoPerson, pct: groupTotal > 0 ? Math.round((twoPerson / groupTotal) * 100) : 0 },
         threePlus: { value: threePlus, pct: groupTotal > 0 ? Math.round((threePlus / groupTotal) * 100) : 0 }
-      }
+      },
+      adultChild:
+        adult !== null && child !== null
+          ? {
+              adult,
+              adultPct: adultChildTotal > 0 ? Math.round((adult / adultChildTotal) * 100) : 0,
+              child,
+              childPct: adultChildTotal > 0 ? Math.round((child / adultChildTotal) * 100) : 0
+            }
+          : null
     };
   }
 

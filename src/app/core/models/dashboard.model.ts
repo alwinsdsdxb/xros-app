@@ -47,6 +47,7 @@ export interface Demographics {
     twoPerson: GroupSizeBucket;
     threePlus: GroupSizeBucket;
   };
+  adultChild: { adult: number; adultPct: number; child: number; childPct: number } | null;
 }
 
 export interface TrendPoint {

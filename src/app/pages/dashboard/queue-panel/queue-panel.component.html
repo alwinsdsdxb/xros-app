@@ -85,127 +85,102 @@
       </div>
     </div>
 
+    <mat-card class="xros-card queue-calendar-card">
+      <div class="calendar-nav-row">
+        <button type="button" class="nav-icon-btn" (click)="prevCalendarMonth()" [disabled]="calendarMonthLoading">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <div class="calendar-month-label">{{ calendarMonthLabel }}</div>
+        <button type="button" class="nav-icon-btn" (click)="nextCalendarMonth()" [disabled]="calendarMonthLoading">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+        <button type="button" class="today-btn" (click)="goToCalendarToday()" [disabled]="calendarMonthLoading">Today</button>
+        <mat-icon class="info-icon" [title]="'Shaded by ' + selectedCalendarMetricLabel">info</mat-icon>
+      </div>
+
+      <div class="loading-row" *ngIf="calendarMonthLoading">
+        <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
+        <span>Loading...</span>
+      </div>
+      <div class="error-row" *ngIf="calendarMonthError && !calendarMonthLoading">{{ calendarMonthError }}</div>
+
+      <ng-container *ngIf="!calendarMonthLoading && !calendarMonthError">
+        <div class="calendar-metric-toggle">
+          <button
+            type="button"
+            *ngFor="let m of calendarMetricOptions"
+            class="metric-toggle-btn"
+            [class.active]="selectedCalendarMetric === m.value"
+            (click)="selectCalendarMetric(m.value)"
+          >{{ m.label }}</button>
+        </div>
+
+        <div class="queue-calendar-weekdays">
+          <span *ngFor="let d of calendarWeekdayLabels">{{ d }}</span>
+        </div>
+        <div class="queue-calendar-grid">
+          <ng-container *ngFor="let week of calendarWeeks">
+            <div
+              *ngFor="let cell of week"
+              class="queue-calendar-cell"
+              [class.out-month]="!cell.inMonth"
+              [ngClass]="cell.row ? 'intensity-' + cellIntensity(cell.row) : ''"
+            >
+              <span class="cell-day">{{ cell.day }}</span>
+              <span class="cell-value" *ngIf="cell.row as r">{{ cellDisplay(r) }}</span>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </mat-card>
+
     <div class="chart-grid">
       <mat-card class="xros-card chart-card">
-        <div class="chart-title">
-          Trend Over Time
-          <mat-icon class="info-icon" title="Avg. Queue Time and Avg. Service Time, per day">info</mat-icon>
-        </div>
+        <div class="chart-title">Trend Over Time</div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="trendChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Avg. Queue Time and Avg. Service Time, per day</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
-        <div class="chart-title">
-          Queue Time vs Target ({{ formatDuration(queueTargetSeconds) }})
-          <mat-icon class="info-icon" title="Avg. Queue Time per day vs fixed 1.5-min target">info</mat-icon>
-        </div>
+        <div class="chart-title">Queue Time vs Target ({{ formatDuration(queueTargetSeconds) }})</div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="targetChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Avg. Queue Time per day vs fixed 1.5-min target</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
-        <div class="chart-title">
-          Queue Demand (Count)
-          <mat-icon class="info-icon" title="Total Queue Visitors, summed per day">info</mat-icon>
-        </div>
+        <div class="chart-title">Queue Demand (Count)</div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="demandChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Total Queue Visitors, summed per day</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
-        <div class="chart-title">
-          Wait-to-Service Ratio (x)
-          <mat-icon class="info-icon" title="Avg. Queue Time ÷ Avg. Service Time">info</mat-icon>
-        </div>
+        <div class="chart-title">Wait-to-Service Ratio (x)</div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="ratioChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Avg. Queue Time ÷ Avg. Service Time</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
-        <div class="chart-title">
-          Waiting Time Share (%)
-          <mat-icon class="info-icon" title="Avg. Queue Time ÷ (Queue + Service Time) × 100">info</mat-icon>
-        </div>
+        <div class="chart-title">Waiting Time Share (%)</div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="shareChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Avg. Queue Time ÷ (Queue + Service Time) × 100</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
         <div class="chart-title">
           Total Customer Waiting Load <span class="chart-subtitle">(Queue Count × Avg. Queue Time)</span>
-          <mat-icon class="info-icon" title="Queue Count × Avg. Queue Time (minutes)">info</mat-icon>
         </div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="loadChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Queue Count × Avg. Queue Time (minutes)</div>
       </mat-card>
 
       <mat-card class="xros-card chart-card">
         <div class="chart-title">
           Avg. Processing Time <span class="chart-subtitle">(Queue + Service)</span>
-          <mat-icon class="info-icon" title="Avg. Queue Time + Avg. Service Time">info</mat-icon>
         </div>
         <highcharts-chart [Highcharts]="Highcharts" [options]="processingChartOptions" [oneToOne]="true" style="display: block; width: 100%; height: 320px"></highcharts-chart>
+        <div class="chart-desc">Avg. Queue Time + Avg. Service Time</div>
       </mat-card>
 
-      <mat-card class="xros-card chart-card queue-calendar-card">
-        <div class="calendar-nav-row">
-          <button type="button" class="nav-icon-btn" (click)="prevCalendarMonth()" [disabled]="calendarMonthLoading">
-            <mat-icon>chevron_left</mat-icon>
-          </button>
-          <div class="calendar-month-label">{{ calendarMonthLabel }}</div>
-          <button type="button" class="nav-icon-btn" (click)="nextCalendarMonth()" [disabled]="calendarMonthLoading">
-            <mat-icon>chevron_right</mat-icon>
-          </button>
-          <button type="button" class="today-btn" (click)="goToCalendarToday()" [disabled]="calendarMonthLoading">Today</button>
-          <mat-icon class="info-icon" title="Shaded by Avg. Queue Time">info</mat-icon>
-        </div>
-
-        <div class="loading-row" *ngIf="calendarMonthLoading">
-          <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
-          <span>Loading...</span>
-        </div>
-        <div class="error-row" *ngIf="calendarMonthError && !calendarMonthLoading">{{ calendarMonthError }}</div>
-
-        <ng-container *ngIf="!calendarMonthLoading && !calendarMonthError">
-          <div class="queue-calendar-weekdays">
-            <span *ngFor="let d of calendarWeekdayLabels">{{ d }}</span>
-          </div>
-          <div class="queue-calendar-grid">
-            <ng-container *ngFor="let week of calendarWeeks">
-              <button
-                type="button"
-                *ngFor="let cell of week"
-                class="queue-calendar-cell"
-                [class.out-month]="!cell.inMonth"
-                [class.selected]="selectedCalendarDay && cell.row && selectedCalendarDay.isoDate === cell.isoDate"
-                [ngClass]="cell.row ? 'intensity-' + cell.intensity : ''"
-                [disabled]="!cell.row"
-                (click)="selectCalendarDay(cell)"
-              >
-                <span class="cell-day">{{ cell.day }}</span>
-                <span class="cell-count" *ngIf="cell.row">{{ formatCount(cell.row.queueCount) }}</span>
-              </button>
-            </ng-container>
-          </div>
-
-          <div class="queue-calendar-detail" *ngIf="selectedCalendarDay as sel">
-            <div class="detail-date">{{ sel.isoDate }}</div>
-            <div class="detail-grid">
-              <div class="detail-item">
-                <span class="detail-label">Avg. Queue Length</span>
-                <span class="detail-value">{{ formatCount(sel.queueLength) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Queue Count</span>
-                <span class="detail-value">{{ formatCount(sel.queueCount) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Avg. Queue Time</span>
-                <span class="detail-value">{{ formatDuration(sel.queueTimeSec) }}</span>
-              </div>
-              <div class="detail-item">
-                <span class="detail-label">Avg. Service Time</span>
-                <span class="detail-value">{{ formatDuration(sel.serviceTimeSec) }}</span>
-              </div>
-            </div>
-          </div>
-        </ng-container>
-      </mat-card>
     </div>
 
     <mat-card class="xros-card table-card">

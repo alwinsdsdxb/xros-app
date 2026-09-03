@@ -90,7 +90,13 @@ export interface QueueCalendarCell {
   day: number;
   inMonth: boolean;
   row: QueueDayRow | null;
-  intensity: number;
+}
+
+export type QueueCalendarMetric = 'queueLength' | 'queueCount' | 'queueTimeSec' | 'serviceTimeSec';
+
+interface QueueCalendarMetricOption {
+  value: QueueCalendarMetric;
+  label: string;
 }
 
 @Component({
@@ -166,10 +172,52 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   calendarMonthLoading = false;
   calendarMonthError = '';
   calendarWeeks: QueueCalendarCell[][] = [];
-  selectedCalendarDay: QueueDayRow | null = null;
+  private calendarRows: QueueDayRow[] = [];
+
+  // Pick one category at a time instead of cramming all 4 into every cell -
+  // clicking an option shows that metric's value (and reshades the heatmap
+  // by it) across the whole calendar.
+  readonly calendarMetricOptions: QueueCalendarMetricOption[] = [
+    { value: 'queueLength', label: 'Avg. Queue Length' },
+    { value: 'queueCount', label: 'Queue Count' },
+    { value: 'queueTimeSec', label: 'Avg. Queue Time' },
+    { value: 'serviceTimeSec', label: 'Avg. Service Time' }
+  ];
+  selectedCalendarMetric: QueueCalendarMetric = 'queueCount';
 
   get calendarMonthLabel(): string {
     return this.calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  }
+
+  get selectedCalendarMetricLabel(): string {
+    return this.calendarMetricOptions.find((o) => o.value === this.selectedCalendarMetric)?.label ?? '';
+  }
+
+  selectCalendarMetric(metric: QueueCalendarMetric): void {
+    this.selectedCalendarMetric = metric;
+  }
+
+  cellValue(row: QueueDayRow): number {
+    return row[this.selectedCalendarMetric];
+  }
+
+  cellDisplay(row: QueueDayRow): string {
+    const value = this.cellValue(row);
+    return this.selectedCalendarMetric === 'queueTimeSec' || this.selectedCalendarMetric === 'serviceTimeSec'
+      ? this.formatMinSec(value)
+      : this.formatCount(value);
+  }
+
+  private formatMinSec(totalSeconds: number): string {
+    const s = Math.max(0, Math.round(totalSeconds));
+    const mm = Math.floor(s / 60);
+    const ss = s % 60;
+    return `${mm}:${ss.toString().padStart(2, '0')}`;
+  }
+
+  cellIntensity(row: QueueDayRow): number {
+    const max = Math.max(1, ...this.calendarRows.map((r) => this.cellValue(r)));
+    return Math.min(CALENDAR_INTENSITY_BUCKETS - 1, Math.floor((this.cellValue(row) / max) * CALENDAR_INTENSITY_BUCKETS));
   }
 
   // Same View/Date Range/Hours filter shape as the Dashboard and Instore
@@ -255,13 +303,6 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   goToCalendarToday(): void {
     this.calendarMonth = this.startOfMonth(new Date());
     this.fetchCalendarMonth();
-  }
-
-  selectCalendarDay(cell: QueueCalendarCell): void {
-    if (!cell.row) {
-      return;
-    }
-    this.selectedCalendarDay = cell.row;
   }
 
   formatCount(value: number): string {
@@ -791,18 +832,17 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   // adjacent month are marked out-of-month and never carry a row, even if a
   // date happens to collide with one already loaded for the current month.
   private buildCalendarWeeks(monthStart: Date, monthEnd: Date, rows: QueueDayRow[]): void {
+    this.calendarRows = rows;
     const rowByDate = new Map(rows.map((r) => [r.isoDate, r]));
     const gridStart = this.addDays(monthStart, -monthStart.getDay());
     const gridEnd = this.addDays(monthEnd, 6 - monthEnd.getDay());
 
-    const max = Math.max(1, ...rows.map((r) => r.queueTimeSec));
     const cells: QueueCalendarCell[] = [];
     for (const d = new Date(gridStart); d <= gridEnd; d.setDate(d.getDate() + 1)) {
       const isoDate = this.formatDate(d);
       const inMonth = d.getMonth() === monthStart.getMonth();
       const row = inMonth ? rowByDate.get(isoDate) ?? null : null;
-      const intensity = row ? Math.min(CALENDAR_INTENSITY_BUCKETS - 1, Math.floor((row.queueTimeSec / max) * CALENDAR_INTENSITY_BUCKETS)) : 0;
-      cells.push({ isoDate, day: d.getDate(), inMonth, row, intensity });
+      cells.push({ isoDate, day: d.getDate(), inMonth, row });
     }
 
     const weeks: QueueCalendarCell[][] = [];
@@ -810,9 +850,6 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       weeks.push(cells.slice(i, i + 7));
     }
     this.calendarWeeks = weeks;
-
-    const todayIso = this.formatDate(this.stripTime(new Date()));
-    this.selectedCalendarDay = rowByDate.get(todayIso) ?? rows[rows.length - 1] ?? null;
   }
 
   private startOfMonth(date: Date): Date {

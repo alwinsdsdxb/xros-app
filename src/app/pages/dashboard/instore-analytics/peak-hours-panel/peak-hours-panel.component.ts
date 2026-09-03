@@ -87,7 +87,7 @@ export class PeakHoursPanelComponent implements OnChanges {
       colorAxis: {
         min: 0,
         stops: [
-          [0, '#ffee58'],
+          [0, '#43a047'],
           [0.5, '#fb8c00'],
           [1, '#c62828']
         ]

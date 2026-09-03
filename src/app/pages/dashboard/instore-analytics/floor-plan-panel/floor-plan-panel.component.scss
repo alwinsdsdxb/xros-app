@@ -217,12 +217,12 @@
 
 .floor-plan-tooltip .tooltip-row {
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
+  justify-content: flex-start;
 }
 
 .floor-plan-tooltip .tooltip-row span {
   color: rgba(255, 255, 255, 0.7);
+  margin-right: 14px;
 }
 
 @media (max-width: 720px) {
