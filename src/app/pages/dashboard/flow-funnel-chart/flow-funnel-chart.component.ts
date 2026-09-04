@@ -27,7 +27,7 @@ interface StagePreset {
 // The fixed 6-stage design this chart is built around, top-to-bottom in
 // pipeline order. Heading text, color and description phrasing are assigned
 // strictly by POSITION (the 1st value that arrives gets Potential Customers'
-// styling, the 2nd gets Total Traffic's, ...) rather than by matching the API's own
+// styling, the 2nd gets Total Footfall's, ...) rather than by matching the API's own
 // label/color fields - the backend's wording and per-widget color config
 // aren't reliable enough to match against (this is exactly why some
 // polygons weren't getting a color before), but the pipeline's stage order
@@ -36,8 +36,8 @@ interface StagePreset {
 // of forcing a 6-stage design onto a different-shaped funnel.
 const STAGE_PRESETS: StagePreset[] = [
   { label: 'Potential Customers', color: '#F15B24', describe: () => 'Storefront traffic baseline' },
-  { label: 'Total Traffic', color: '#B2C617', describe: (value, values) => `${pctOf(value, values[0])}% of potential customers` },
-  { label: 'Unique Footfall', color: '#F3A313', describe: (value, values) => `${pctOf(value, values[1])}% of total traffic` },
+  { label: 'Total Footfall', color: '#B2C617', describe: (value, values) => `${pctOf(value, values[0])}% of potential customers` },
+  { label: 'Unique Footfall', color: '#F3A313', describe: (value, values) => `${pctOf(value, values[1])}% of total footfall` },
   { label: 'Potential Buyers', color: '#2F708F', describe: () => 'One potential buyer per visitor group' },
   {
     label: 'Sales Conversion',

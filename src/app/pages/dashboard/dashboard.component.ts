@@ -910,7 +910,7 @@ export class DashboardComponent implements OnInit {
   // Passer By reuses the same cumulative Passer By + Total Footfall metric as
   // its own KPI card (see refreshPasserByMetric) rather than the Funnel
   // widget's own "Passer By" stage, so the top of the funnel is never smaller
-  // than Total Traffic below it. Total Traffic/Unique Visitors reuse the
+  // than Total Footfall below it. Total Footfall/Unique Visitors reuse the
   // Total Footfall/Unique Footfall KPI cards' own values instead of the
   // Funnel widget's own "Total Traffic"/"Unique Visitors" stages, which
   // don't match those real numbers. Potential Buyers reuses the "Groups"
@@ -920,7 +920,7 @@ export class DashboardComponent implements OnInit {
   private refreshFunnelStages(): void {
     this.funnelStages = [
       { label: 'Potential Customers', value: this.passerByMetric?.value ?? 0 },
-      { label: 'Total Traffic', value: this.footfallMetric?.value ?? 0 },
+      { label: 'Total Footfall', value: this.footfallMetric?.value ?? 0 },
       { label: 'Unique Footfall', value: this.uniqueFootfallMetric?.value ?? 0 },
       { label: 'Potential Buyers', value: this.groupsMetric?.value ?? 0 },
       { label: 'Sales Conversion', value: 0 },
