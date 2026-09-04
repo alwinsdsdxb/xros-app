@@ -40,6 +40,29 @@
     </ng-template>
   </ng-container>
 
+  <ng-container *ngIf="activeTab === 'entrance-flow'">
+    <p class="chart-caption">
+      <ng-container *ngIf="shownEntranceFlowCount">
+        Strongest {{ shownEntranceFlowCount }} of {{ totalEntranceFlowCount }} entrance-anchored flows, ranked by
+        visitor volume<ng-container *ngIf="droppedSameTierCount">
+          ({{ droppedSameTierCount }} zone-to-zone flow{{ droppedSameTierCount === 1 ? '' : 's' }} not shown - no
+          clear order relative to an entrance)</ng-container
+        >. Link width = volume.
+      </ng-container>
+    </p>
+
+    <highcharts-chart
+      *ngIf="shownEntranceFlowCount; else noEntranceFlowData"
+      [Highcharts]="Highcharts"
+      [options]="entranceFlowChartOptions"
+      [oneToOne]="true"
+      style="display: block; width: 100%; height: 380px"
+    ></highcharts-chart>
+    <ng-template #noEntranceFlowData>
+      <div class="no-flow-data">No entrance flow data for this date yet.</div>
+    </ng-template>
+  </ng-container>
+
   <div class="matrix-table" *ngIf="activeTab === 'metric-matrix'">
     <ng-container *ngIf="matrixRows.length; else noMatrixData">
       <div class="matrix-header">
