@@ -170,13 +170,11 @@ export class DashboardComponent implements OnInit {
   private deviceHealth: { online: number; offline: number } | null = null;
   private weather: { temperatureC: number; location?: string; condition?: string } | null = null;
 
-  scopes = [{ value: 'all', label: 'All stores' }];
   storeOptions: { value: string; label: string }[] = [];
 
   // Same computation Instore Analytics/Comparison already use for their own
   // Store dropdown label - real store name when there's exactly one store in
-  // scope, "All Stores" otherwise. The Dashboard tab's "Scope" filter is that
-  // same single-store selector, just missing this until now.
+  // scope, "All Stores" otherwise.
   get allStoresLabel(): string {
     return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Stores';
   }
@@ -219,7 +217,7 @@ export class DashboardComponent implements OnInit {
     private router: Router
   ) {
     this.filterForm = this.fb.group({
-      scope: ['all'],
+      store: ['all'],
       view: ['Month'],
       date: [new Date()],
       customRange: this.fb.group({ start: [null], end: [null] }),
@@ -549,7 +547,7 @@ export class DashboardComponent implements OnInit {
   // any of the range helpers below (which only know single-day/week/month/
   // year/custom shapes) ever see it.
   private fetch(): void {
-    const { date: rawDate, view, customRange, operationalHours } = this.filterForm.value;
+    const { date: rawDate, view, customRange, operationalHours, store } = this.filterForm.value;
     this.appliedOperationalHours = operationalHours;
     this.appliedView = view;
     this.displayDate = this.computeDisplayDate(rawDate, view, customRange);
@@ -565,33 +563,33 @@ export class DashboardComponent implements OnInit {
 
     const selectedDate = typeof date === 'string' ? new Date(date) : date;
     this.comparisonDateLabels = this.computeComparisonDateLabels(selectedDate);
-    this.fetchKpi(this.footfallWidget, fromStr, toStr, selectedDate, operationalHours, (metric) => {
+    this.fetchKpi(this.footfallWidget, fromStr, toStr, selectedDate, operationalHours, store, (metric) => {
       this.footfallMetric = metric;
       this.refreshPasserByMetric();
       this.refreshFunnelStages();
     });
-    this.fetchKpi(this.passerByWidget, fromStr, toStr, selectedDate, operationalHours, (metric) => {
+    this.fetchKpi(this.passerByWidget, fromStr, toStr, selectedDate, operationalHours, store, (metric) => {
       this.rawPasserByMetric = metric;
       this.refreshPasserByMetric();
       this.refreshFunnelStages();
     });
-    this.fetchKpi(this.uniqueFootfallWidget, fromStr, toStr, selectedDate, operationalHours, (metric) => {
+    this.fetchKpi(this.uniqueFootfallWidget, fromStr, toStr, selectedDate, operationalHours, store, (metric) => {
       this.uniqueFootfallMetric = metric;
       this.refreshFunnelStages();
     });
-    this.fetchKpi(this.groupsWidget, fromStr, toStr, selectedDate, operationalHours, (metric) => {
+    this.fetchKpi(this.groupsWidget, fromStr, toStr, selectedDate, operationalHours, store, (metric) => {
       this.groupsMetric = metric;
       this.refreshFunnelStages();
     });
-    this.fetchTrafficTrend(view, date, operationalHours);
-    this.fetchFunnel(fromStr, toStr, operationalHours);
-    this.fetchAgeGroups(fromStr, toStr, operationalHours);
-    this.fetchDwellDistribution(fromStr, toStr, prevFromStr, prevToStr, operationalHours);
-    this.fetchAvgDwellTrend(view, date);
-    this.fetchGenderSplit(fromStr, toStr, operationalHours);
-    this.fetchGroupSize(fromStr, toStr, operationalHours);
-    this.fetchDeviceHealth(fromStr, toStr, operationalHours);
-    this.fetchWeather(fromStr, toStr, operationalHours);
+    this.fetchTrafficTrend(view, date, operationalHours, store);
+    this.fetchFunnel(fromStr, toStr, operationalHours, store);
+    this.fetchAgeGroups(fromStr, toStr, operationalHours, store);
+    this.fetchDwellDistribution(fromStr, toStr, prevFromStr, prevToStr, operationalHours, store);
+    this.fetchAvgDwellTrend(view, date, store);
+    this.fetchGenderSplit(fromStr, toStr, operationalHours, store);
+    this.fetchGroupSize(fromStr, toStr, operationalHours, store);
+    this.fetchDeviceHealth(fromStr, toStr, operationalHours, store);
+    this.fetchWeather(fromStr, toStr, operationalHours, store);
   }
 
   // The widget's own compareConfig never actually returns "Previous
@@ -611,6 +609,7 @@ export class DashboardComponent implements OnInit {
     toStr: string,
     date: Date,
     operationalHours: number,
+    store: string,
     assign: (metric: KpiMetric | null) => void
   ): void {
     if (!widget || !this.footfallGroup) {
@@ -624,25 +623,28 @@ export class DashboardComponent implements OnInit {
     const previousYear = this.getPreviousDateRange('Year', date);
 
     forkJoin({
-      current: this.fetchKpiCurrentValue(widget, fromStr, toStr, operationalHours),
-      previousDay: this.fetchKpiCurrentValue(widget, this.formatDate(previousDay.from), this.formatDate(previousDay.to), operationalHours),
+      current: this.fetchKpiCurrentValue(widget, fromStr, toStr, operationalHours, store),
+      previousDay: this.fetchKpiCurrentValue(widget, this.formatDate(previousDay.from), this.formatDate(previousDay.to), operationalHours, store),
       previousWeek: this.fetchKpiCurrentValue(
         widget,
         this.formatDate(previousWeek.from),
         this.formatDate(previousWeek.to),
-        operationalHours
+        operationalHours,
+        store
       ),
       previousMonth: this.fetchKpiCurrentValue(
         widget,
         this.formatDate(previousMonth.from),
         this.formatDate(previousMonth.to),
-        operationalHours
+        operationalHours,
+        store
       ),
       previousYear: this.fetchKpiCurrentValue(
         widget,
         this.formatDate(previousYear.from),
         this.formatDate(previousYear.to),
-        operationalHours
+        operationalHours,
+        store
       )
     })
       .pipe(finalize(() => (this.loading = false)))
@@ -664,10 +666,11 @@ export class DashboardComponent implements OnInit {
   // request - the one number that has always been correct (only the
   // compareConfig-driven "Previous X" boxes are unreliable), reused here to
   // independently query every other comparison window.
-  private fetchKpiCurrentValue(widget: Widget, fromStr: string, toStr: string, operationalHours: number): Observable<number> {
+  private fetchKpiCurrentValue(widget: Widget, fromStr: string, toStr: string, operationalHours: number, store: string): Observable<number> {
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
-    const payload = buildKpiDataPayload(widget, this.footfallGroup!, from, to, undefined, undefined, undefined, operationalHours);
+    const storeIds = store !== 'all' ? [store] : undefined;
+    const payload = buildKpiDataPayload(widget, this.footfallGroup!, from, to, storeIds, undefined, undefined, operationalHours);
 
     return this.kpiService.postKpiData(payload).pipe(
       map((res) => res.data.dataFilter.filter((f) => f.fetchDataFor === 'box').find((f) => f.selected)?.data?.[0]?.value ?? 0),
@@ -717,7 +720,7 @@ export class DashboardComponent implements OnInit {
   // Total Footfall/Unique Footfall stay entrance-scoped and summed (real
   // distinct per-entrance door sensors, verified earlier); Passer By is
   // queried at the mall level only, matching its own KPI card.
-  private fetchTrafficTrend(view: string, date: Date | string, operationalHours: number): void {
+  private fetchTrafficTrend(view: string, date: Date | string, operationalHours: number, store: string): void {
     if (!this.trendReportWidget || !this.footfallGroup || !this.entranceStoreIds.length) {
       this.trafficSeriesForChart = [];
       return;
@@ -728,6 +731,7 @@ export class DashboardComponent implements OnInit {
     const { from: rangeStart, to: rangeEnd } = this.getDateRange(rangeView, d);
     const from = `${this.formatDate(rangeStart)} 00:00:00`;
     const to = `${this.formatDate(rangeEnd)} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
 
     const footfallPayload = buildMultiStoreKpiPayload(
       this.trendReportWidget,
@@ -741,7 +745,7 @@ export class DashboardComponent implements OnInit {
     );
     const passerBy$ = this.passerByTrendWidget
       ? this.kpiService.postKpiData(
-          buildKpiDataPayload(this.passerByTrendWidget, this.footfallGroup, from, to, undefined, 'dayOfMonth', 'month', operationalHours)
+          buildKpiDataPayload(this.passerByTrendWidget, this.footfallGroup, from, to, storeIds, 'dayOfMonth', 'month', operationalHours)
         )
       : of(null);
 
@@ -865,7 +869,7 @@ export class DashboardComponent implements OnInit {
   // Total Footfall figure shown on its own KPI card. The mall-level store
   // matches the real Total Footfall value and returns real data for every
   // stage.
-  private fetchFunnel(fromStr: string, toStr: string, operationalHours: number): void {
+  private fetchFunnel(fromStr: string, toStr: string, operationalHours: number, store: string): void {
     if (!this.funnelWidget || !this.footfallGroup) {
       this.rawFunnelStages = [];
       this.refreshFunnelStages();
@@ -874,12 +878,13 @@ export class DashboardComponent implements OnInit {
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
     const payload = buildKpiDataPayload(
       this.funnelWidget,
       this.footfallGroup,
       from,
       to,
-      undefined,
+      storeIds,
       undefined,
       undefined,
       operationalHours
@@ -949,7 +954,7 @@ export class DashboardComponent implements OnInit {
   // explicitly (rather than trusting footfallGroup's own mutable field,
   // which can be "hour") so the API returns one aggregated value per age
   // band for the whole selected day instead of an hourly breakdown.
-  private fetchAgeGroups(fromStr: string, toStr: string, operationalHours: number): void {
+  private fetchAgeGroups(fromStr: string, toStr: string, operationalHours: number, store: string): void {
     if (!this.ageDemographicsWidget || !this.footfallGroup) {
       this.ageGroups = [];
       this.refreshDemographicsForPanel();
@@ -958,12 +963,13 @@ export class DashboardComponent implements OnInit {
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
     const payload = buildKpiDataPayload(
       this.ageDemographicsWidget,
       this.footfallGroup,
       from,
       to,
-      undefined,
+      storeIds,
       'day',
       undefined,
       operationalHours
@@ -1001,12 +1007,12 @@ export class DashboardComponent implements OnInit {
 
   // Male and Female are two separate box widgets — fetch both and join them into
   // one gender-split view rather than showing them as unrelated numbers.
-  private fetchGenderSplit(fromStr: string, toStr: string, operationalHours: number): void {
-    this.fetchGenderCount(this.maleWidget, fromStr, toStr, operationalHours, (value) => {
+  private fetchGenderSplit(fromStr: string, toStr: string, operationalHours: number, store: string): void {
+    this.fetchGenderCount(this.maleWidget, fromStr, toStr, operationalHours, store, (value) => {
       this.maleCount = value;
       this.refreshDemographicsForPanel();
     });
-    this.fetchGenderCount(this.femaleWidget, fromStr, toStr, operationalHours, (value) => {
+    this.fetchGenderCount(this.femaleWidget, fromStr, toStr, operationalHours, store, (value) => {
       this.femaleCount = value;
       this.refreshDemographicsForPanel();
     });
@@ -1017,6 +1023,7 @@ export class DashboardComponent implements OnInit {
     fromStr: string,
     toStr: string,
     operationalHours: number,
+    store: string,
     assign: (value: number) => void
   ): void {
     if (!widget || !this.footfallGroup) {
@@ -1026,7 +1033,8 @@ export class DashboardComponent implements OnInit {
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
-    const payload = buildKpiDataPayload(widget, this.footfallGroup, from, to, undefined, undefined, undefined, operationalHours);
+    const storeIds = store !== 'all' ? [store] : undefined;
+    const payload = buildKpiDataPayload(widget, this.footfallGroup, from, to, storeIds, undefined, undefined, operationalHours);
 
     this.kpiService.postKpiData(payload).subscribe({
       next: (res) => {
@@ -1043,11 +1051,11 @@ export class DashboardComponent implements OnInit {
   // Male/Female - a single current-period box value, scoped to the mall
   // store (footfallGroup.stores) since this data is mall-wide, not
   // per-entrance (same class of KPI as Age Demographics/Funnel).
-  private fetchGroupSize(fromStr: string, toStr: string, operationalHours: number): void {
+  private fetchGroupSize(fromStr: string, toStr: string, operationalHours: number, store: string): void {
     forkJoin({
-      solo: this.fetchGroupSizeCount(this.soloVisitorsWidget, fromStr, toStr, operationalHours),
-      twoPerson: this.fetchGroupSizeCount(this.twoVisitorsGroupWidget, fromStr, toStr, operationalHours),
-      threePlus: this.fetchGroupSizeCount(this.moreThanTwoVisitorsWidget, fromStr, toStr, operationalHours)
+      solo: this.fetchGroupSizeCount(this.soloVisitorsWidget, fromStr, toStr, operationalHours, store),
+      twoPerson: this.fetchGroupSizeCount(this.twoVisitorsGroupWidget, fromStr, toStr, operationalHours, store),
+      threePlus: this.fetchGroupSizeCount(this.moreThanTwoVisitorsWidget, fromStr, toStr, operationalHours, store)
     }).subscribe(({ solo, twoPerson, threePlus }) => {
       this.groupSizeCounts = { solo, twoPerson, threePlus };
       this.refreshDemographicsForPanel();
@@ -1059,14 +1067,15 @@ export class DashboardComponent implements OnInit {
   // fetchDataFor === 'box' first (like fetchGenderCount does) would always
   // come back empty. The "selected: true" current-period entry is present
   // either way, so read that directly (confirmed live via kpi/data).
-  private fetchGroupSizeCount(widget: Widget | null, fromStr: string, toStr: string, operationalHours: number): Observable<number> {
+  private fetchGroupSizeCount(widget: Widget | null, fromStr: string, toStr: string, operationalHours: number, store: string): Observable<number> {
     if (!widget || !this.dwellTrendGroup || !this.footfallGroup) {
       return of(0);
     }
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
-    const payload = buildKpiDataPayload(widget, this.dwellTrendGroup, from, to, this.footfallGroup.stores, undefined, undefined, operationalHours);
+    const storeIds = store !== 'all' ? [store] : this.footfallGroup.stores;
+    const payload = buildKpiDataPayload(widget, this.dwellTrendGroup, from, to, storeIds, undefined, undefined, operationalHours);
 
     return this.kpiService.postKpiData(payload).pipe(
       map((res) => res.data.dataFilter.find((f) => f.selected)?.data?.[0]?.value ?? 0),
@@ -1118,7 +1127,14 @@ export class DashboardComponent implements OnInit {
   // real period-over-period change instead of a fabricated one. This was a
   // fixed "today vs yesterday" comparison before Week/Month/Year/Custom
   // support existed; "yesterday" only ever made sense for the Day view.
-  private fetchDwellDistribution(fromStr: string, toStr: string, prevFromStr: string, prevToStr: string, operationalHours: number): void {
+  private fetchDwellDistribution(
+    fromStr: string,
+    toStr: string,
+    prevFromStr: string,
+    prevToStr: string,
+    operationalHours: number,
+    store: string
+  ): void {
     if (!this.dwellDistributionWidget || !this.footfallGroup) {
       this.dwellDistribution = null;
       this.dwellBucketStats = null;
@@ -1127,8 +1143,8 @@ export class DashboardComponent implements OnInit {
     }
 
     forkJoin({
-      current: this.fetchHistogramBuckets(this.dwellDistributionWidget, this.footfallGroup, fromStr, toStr, operationalHours),
-      previous: this.fetchHistogramBuckets(this.dwellDistributionWidget, this.footfallGroup, prevFromStr, prevToStr, operationalHours)
+      current: this.fetchHistogramBuckets(this.dwellDistributionWidget, this.footfallGroup, fromStr, toStr, operationalHours, store),
+      previous: this.fetchHistogramBuckets(this.dwellDistributionWidget, this.footfallGroup, prevFromStr, prevToStr, operationalHours, store)
     }).subscribe(({ current, previous }) => {
       // Engagement Composition has no separate real widget, so it reuses these
       // same time-slot buckets (only non-zero ones, since a 0-visitor slice is
@@ -1147,11 +1163,13 @@ export class DashboardComponent implements OnInit {
     group: DashboardGroup,
     fromStr: string,
     toStr: string,
-    operationalHours: number
+    operationalHours: number,
+    store: string
   ): Observable<DwellDistributionBucket[]> {
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
-    const payload = buildKpiDataPayload(widget, group, from, to, undefined, undefined, undefined, operationalHours);
+    const storeIds = store !== 'all' ? [store] : undefined;
+    const payload = buildKpiDataPayload(widget, group, from, to, storeIds, undefined, undefined, operationalHours);
 
     return this.kpiService.postKpiData(payload).pipe(
       map((res) => (res.data.dataFilter[0]?.data ?? []).map((point) => ({ label: point.date ?? '', value: point.value }))),
@@ -1194,7 +1212,7 @@ export class DashboardComponent implements OnInit {
   // any other widget - one data point with `online`/`offline` counts instead
   // of the usual `value` - so it's parsed directly here rather than through
   // toKpiMetric.
-  private fetchDeviceHealth(fromStr: string, toStr: string, operationalHours: number): void {
+  private fetchDeviceHealth(fromStr: string, toStr: string, operationalHours: number, store: string): void {
     if (!this.deviceHealthWidget || !this.footfallGroup) {
       this.deviceHealth = null;
       this.refreshOperationsForPanel();
@@ -1203,12 +1221,13 @@ export class DashboardComponent implements OnInit {
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
     const payload = buildKpiDataPayload(
       this.deviceHealthWidget,
       this.footfallGroup,
       from,
       to,
-      undefined,
+      storeIds,
       undefined,
       undefined,
       operationalHours
@@ -1235,7 +1254,7 @@ export class DashboardComponent implements OnInit {
   // in the box label ("<account>::<store>::<range>::Weather"), and the icon
   // slug (e.g. "partly-cloudy-day") maps directly to a condition string -
   // so both are derived from real response data, not invented.
-  private fetchWeather(fromStr: string, toStr: string, operationalHours: number): void {
+  private fetchWeather(fromStr: string, toStr: string, operationalHours: number, store: string): void {
     if (!this.weatherWidget || !this.footfallGroup) {
       this.weather = null;
       this.refreshOperationsForPanel();
@@ -1244,12 +1263,13 @@ export class DashboardComponent implements OnInit {
 
     const from = `${fromStr} 00:00:00`;
     const to = `${toStr} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
     const payload = buildKpiDataPayload(
       this.weatherWidget,
       this.footfallGroup,
       from,
       to,
-      undefined,
+      storeIds,
       undefined,
       undefined,
       operationalHours
@@ -1326,7 +1346,7 @@ export class DashboardComponent implements OnInit {
   // (getPreviousDateRange) - that comparison window can fall outside the
   // chart's month, e.g. Month view's "previous" is last month, so it can't
   // reuse the chart query's byDate map.
-  private fetchAvgDwellTrend(view: string, date: Date | string): void {
+  private fetchAvgDwellTrend(view: string, date: Date | string, store: string): void {
     if (!this.dwellTrendWidget || !this.dwellTrendGroup || !this.footfallGroup) {
       this.avgDwellTrend = [];
       this.estimatedAvgDwellStat = { value: 0, previousDay: 0, changePct: 0 };
@@ -1350,7 +1370,7 @@ export class DashboardComponent implements OnInit {
     const spanStart = new Date(Math.min(chartStart.getTime(), periodStart.getTime(), prevStart.getTime()));
     const spanEnd = new Date(Math.max(chartEnd.getTime(), periodEnd.getTime(), prevEnd.getTime()));
 
-    this.fetchAvgDwellMinutesByMonth(spanStart, spanEnd).subscribe({
+    this.fetchAvgDwellMinutesByMonth(spanStart, spanEnd, store).subscribe({
       next: (byDate) => {
         this.avgDwellTrend =
           chartRangeView === 'Year' ? this.toYearlyAvgDwellTrend(byDate, chartStart, chartEnd) : this.toDailyAvgDwellTrend(byDate, chartStart, chartEnd);
@@ -1372,7 +1392,7 @@ export class DashboardComponent implements OnInit {
   // Fetches every whole calendar month between start and end (inclusive) with
   // one request each - the one request shape proven to work for this widget -
   // and merges them into a single day->minutes map spanning the full range.
-  private fetchAvgDwellMinutesByMonth(start: Date, end: Date): Observable<Map<string, number>> {
+  private fetchAvgDwellMinutesByMonth(start: Date, end: Date, store: string): Observable<Map<string, number>> {
     const monthStarts: Date[] = [];
     for (const m = new Date(start.getFullYear(), start.getMonth(), 1); m <= end; m.setMonth(m.getMonth() + 1)) {
       monthStarts.push(new Date(m));
@@ -1381,7 +1401,7 @@ export class DashboardComponent implements OnInit {
     return forkJoin(
       monthStarts.map((monthStart) => {
         const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
-        return this.fetchAvgDwellMinutesByDay(monthStart, monthEnd);
+        return this.fetchAvgDwellMinutesByDay(monthStart, monthEnd, store);
       })
     ).pipe(
       map((maps) => {
@@ -1399,15 +1419,16 @@ export class DashboardComponent implements OnInit {
   // Values come back in seconds; converted to minutes to match the panel's
   // other dwell stats. Always called with a full calendar month's from/to -
   // never a narrower range - see fetchAvgDwellMinutesByMonth.
-  private fetchAvgDwellMinutesByDay(from: Date, to: Date): Observable<Map<string, number>> {
+  private fetchAvgDwellMinutesByDay(from: Date, to: Date, store: string): Observable<Map<string, number>> {
     const fromStr = `${this.formatDate(from)} 00:00:00`;
     const toStr = `${this.formatDate(to)} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : this.footfallGroup!.stores;
     const payload = buildKpiDataPayload(
       this.dwellTrendWidget!,
       this.dwellTrendGroup!,
       fromStr,
       toStr,
-      this.footfallGroup!.stores,
+      storeIds,
       'dayOfMonth',
       'month'
     );

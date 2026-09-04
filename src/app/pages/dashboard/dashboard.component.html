@@ -25,13 +25,13 @@
     </div>
 
     <div class="filter-box">
-      <span class="filter-caption">Scope</span>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field scope-field">
-        <mat-select formControlName="scope">
-          <mat-option *ngFor="let s of scopes" [value]="s.value">{{ s.value === 'all' ? allStoresLabel : s.label }}</mat-option>
+      <span class="filter-caption">Store</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
+        <mat-select formControlName="store">
+          <mat-option value="all">{{ allStoresLabel }}</mat-option>
+          <mat-option *ngFor="let s of storeOptions" [value]="s.value" [hidden]="storeOptions.length === 1">{{ s.label }}</mat-option>
         </mat-select>
       </mat-form-field>
-      <span class="filter-subtext">Combined traffic view</span>
     </div>
 
     <div class="filter-box">

@@ -151,15 +151,7 @@
       </mat-card>
     </div>
 
-    <app-peak-hours-panel
-      [peakHours]="peakHoursForPanel"
-      [dateFrom]="campaignsRangeFrom"
-      [dateTo]="campaignsRangeTo"
-      [totalFootfall]="footfallTotal"
-      [uniqueFootfall]="uniqueFootfallTotal"
-      [male]="maleTotal"
-      [female]="femaleTotal"
-    ></app-peak-hours-panel>
+    <app-peak-hours-panel [peakHours]="peakHoursForPanel"></app-peak-hours-panel>
 
     <app-floor-plan-panel [data]="floorPlanForPanel"></app-floor-plan-panel>
 

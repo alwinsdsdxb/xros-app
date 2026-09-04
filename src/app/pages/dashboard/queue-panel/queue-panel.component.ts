@@ -123,8 +123,10 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   errorMessage = '';
 
   storeOptions: { value: string; label: string }[] = [];
-  get allQueuesLabel(): string {
-    return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Queues';
+  // Same computation Instore Analytics uses for its own Store dropdown label -
+  // real store name when there's exactly one store in scope, "All Stores" otherwise.
+  get allStoresLabel(): string {
+    return this.storeOptions.length === 1 ? this.storeOptions[0].label : 'All Stores';
   }
 
   dailyRows: QueueDayRow[] = [];
@@ -178,8 +180,8 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   // clicking an option shows that metric's value (and reshades the heatmap
   // by it) across the whole calendar.
   readonly calendarMetricOptions: QueueCalendarMetricOption[] = [
-    { value: 'queueLength', label: 'Avg. Queue Length' },
     { value: 'queueCount', label: 'Queue Count' },
+    { value: 'queueLength', label: 'Avg. Queue Length' },
     { value: 'queueTimeSec', label: 'Avg. Queue Time' },
     { value: 'serviceTimeSec', label: 'Avg. Service Time' }
   ];
@@ -258,7 +260,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     private kpiService: KpiService
   ) {
     this.filterForm = this.fb.group({
-      scope: ['all'],
+      store: ['all'],
       view: ['Month'],
       date: [new Date()],
       customRange: this.fb.group({ start: [null], end: [null] }),
@@ -390,7 +392,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const widget = this.queueWidget;
     const group = this.queueGroup;
 
-    const { date: rawDate, view, operationalHours } = this.filterForm.value;
+    const { date: rawDate, view, store, operationalHours } = this.filterForm.value;
     const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     const { from, to } = this.getDateRange(view, this.stripTime(new Date(date)));
     this.rangeDays = this.diffDaysInclusive(from, to);
@@ -401,16 +403,17 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const toRangeStrings = (s: Date, e: Date) => ({ from: `${this.formatDate(s)} 00:00:00`, to: `${this.formatDate(e)} 23:59:59` });
     const currentRange = toRangeStrings(from, to);
     const previousRange = toRangeStrings(prevFrom, prevTo);
+    const storeIds = store !== 'all' ? [store] : undefined;
 
     this.loading = true;
     this.errorMessage = '';
 
     forkJoin({
       current: this.kpiService.postKpiData(
-        buildKpiDataPayload(widget, group, currentRange.from, currentRange.to, undefined, 'dayOfMonth', 'month', operationalHours)
+        buildKpiDataPayload(widget, group, currentRange.from, currentRange.to, storeIds, 'dayOfMonth', 'month', operationalHours)
       ),
       previous: this.kpiService
-        .postKpiData(buildKpiDataPayload(widget, group, previousRange.from, previousRange.to, undefined, 'dayOfMonth', 'month', operationalHours))
+        .postKpiData(buildKpiDataPayload(widget, group, previousRange.from, previousRange.to, storeIds, 'dayOfMonth', 'month', operationalHours))
         .pipe(catchError(() => of(null)))
     }).subscribe({
       next: ({ current, previous }) => {
@@ -826,13 +829,14 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const monthEnd = new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0);
     const from = `${this.formatDate(monthStart)} 00:00:00`;
     const to = `${this.formatDate(monthEnd)} 23:59:59`;
-    const operationalHours = this.filterForm.value.operationalHours;
+    const { store, operationalHours } = this.filterForm.value;
+    const storeIds = store !== 'all' ? [store] : undefined;
 
     this.calendarMonthLoading = true;
     this.calendarMonthError = '';
 
     this.kpiService
-      .postKpiData(buildKpiDataPayload(widget, group, from, to, undefined, 'dayOfMonth', 'month', operationalHours))
+      .postKpiData(buildKpiDataPayload(widget, group, from, to, storeIds, 'dayOfMonth', 'month', operationalHours))
       .subscribe({
         next: (res) => {
           this.calendarMonthLoading = false;

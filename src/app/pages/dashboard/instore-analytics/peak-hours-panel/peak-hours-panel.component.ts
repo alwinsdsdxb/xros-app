@@ -12,12 +12,6 @@ import { PeakHours } from '../../../../core/models/instore-analytics.model';
 })
 export class PeakHoursPanelComponent implements OnChanges {
   @Input() peakHours: PeakHours | null = null;
-  @Input() dateFrom: Date | null = null;
-  @Input() dateTo: Date | null = null;
-  @Input() totalFootfall: number | null = null;
-  @Input() uniqueFootfall: number | null = null;
-  @Input() male: number | null = null;
-  @Input() female: number | null = null;
 
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};

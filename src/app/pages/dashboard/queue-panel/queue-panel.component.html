@@ -10,10 +10,11 @@
     </div>
 
     <div class="filter-box">
-      <span class="filter-caption">Scope</span>
-      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field scope-field">
-        <mat-select formControlName="scope">
-          <mat-option value="all">{{ allQueuesLabel }}</mat-option>
+      <span class="filter-caption">Store</span>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
+        <mat-select formControlName="store">
+          <mat-option value="all">{{ allStoresLabel }}</mat-option>
+          <mat-option *ngFor="let s of storeOptions" [value]="s.value" [hidden]="storeOptions.length === 1">{{ s.label }}</mat-option>
         </mat-select>
       </mat-form-field>
     </div>

@@ -42,7 +42,6 @@ export class DwellPanelComponent implements OnChanges {
   engagementChartOptions: Highcharts.Options = {};
   trendChartOptions: Highcharts.Options = {};
   engagementLegend: EngagementLegendItem[] = [];
-  engagementTotal = 0;
 
   private readonly engagementPalette = ['#0f4c73', '#1e8a7c', '#a7b62e', '#e3a73c', '#7b5ea7'];
 
@@ -134,12 +133,11 @@ export class DwellPanelComponent implements OnChanges {
   // separate real "engagement composition" widget), relabeled per dwell tier
   // by the parent. Styled like the Gender Split donut elsewhere on this
   // dashboard for visual consistency: thin ring, no crowded inner labels,
-  // center total, external legend carrying the real value + share.
+  // external legend carrying the share only (no raw visit counts shown).
   private buildEngagementChart(): void {
     const buckets = this.dwell?.engagementComposition ?? [];
     const palette = this.engagementPalette;
     const total = buckets.reduce((sum, b) => sum + b.value, 0);
-    this.engagementTotal = total;
 
     this.engagementLegend = buckets.map((b, i) => ({
       label: b.label,

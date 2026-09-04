@@ -96,15 +96,6 @@
   color: var(--ink-muted);
 }
 
-.filter-subtext {
-  display: block;
-  margin-top: 3px;
-  font-size: 11.5px;
-  font-weight: 500;
-  color: var(--ink-muted);
-  white-space: nowrap;
-}
-
 .filter-field {
   min-width: 80px;
   flex: 0 1 100px;
@@ -114,7 +105,7 @@
 }
 
 // Match the mat-form-field outline's height/vertical-centering to the 34px
-// toggle-groups so every filter box (Scope/View/Date/Hours) lines up on the
+// toggle-groups so every filter box (Store/View/Date/Hours) lines up on the
 // same row without the taller default MDC field height pushing it off-baseline.
 ::ng-deep .filter-field .mat-mdc-text-field-wrapper {
   height: 34px;
@@ -141,7 +132,7 @@
 // flex:0 1 100px shorthand leaves shrink:1, so under layout pressure these
 // boxes were shrinking back down toward .filter-field's 80px min-width
 // despite the wider basis, still clipping long store/scope names.
-.scope-field {
+.store-field {
   flex: 0 0 300px;
   min-width: 300px;
 }
@@ -152,28 +143,6 @@
 .dashboard-field {
   flex: 0 0 300px;
   min-width: 300px;
-}
-
-// The Scope box has no visible input outline in the reference design - it
-// reads as plain bold text with a trailing chevron, sitting inside the
-// filter-box's own border. mat-select still drives the actual dropdown
-// behavior underneath; only its outline/notch is hidden.
-::ng-deep .scope-field .mdc-notched-outline {
-  display: none;
-}
-
-::ng-deep .scope-field .mat-mdc-text-field-wrapper {
-  padding: 0;
-}
-
-::ng-deep .scope-field .mat-mdc-select-value-text {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-primary);
-}
-
-::ng-deep .scope-field .mat-mdc-select-arrow {
-  color: var(--ink-muted);
 }
 
 .date-field {

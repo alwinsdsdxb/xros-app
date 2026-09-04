@@ -112,7 +112,7 @@
 // flex:0 1 100px shorthand leaves shrink:1, so under layout pressure these
 // boxes were shrinking back down toward .filter-field's 80px min-width
 // despite the wider basis, still clipping long store/scope names.
-.scope-field {
+.store-field {
   flex: 0 0 300px;
   min-width: 300px;
 }

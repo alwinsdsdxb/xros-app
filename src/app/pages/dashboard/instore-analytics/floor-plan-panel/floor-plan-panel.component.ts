@@ -322,8 +322,24 @@ export class FloorPlanPanelComponent implements OnChanges, AfterViewInit, OnDest
     const bufferX = cssX * scaleX;
     const bufferY = cssY * scaleY;
 
+    // Checked in reverse paint order (last-drawn/topmost first) - redrawShapes()
+    // paints shapes in array order, so later shapes visually cover earlier ones
+    // wherever two zone polygons overlap. A forward find() here returned
+    // whichever zone came FIRST in the array for any point inside an overlap,
+    // even though the LAST one is what's actually visible on screen - if one
+    // zone's polygon is large/broad and drawn early, this made almost every
+    // point inside its bounds resolve to that one zone regardless of which
+    // (visually correct) smaller zone was painted on top of it there.
     const ctx = canvas.getContext('2d');
-    const hit = ctx ? this.shapes.find((shape) => ctx.isPointInPath(shape.path, bufferX, bufferY)) : undefined;
+    let hit: FloorPlanShape | undefined;
+    if (ctx) {
+      for (let i = this.shapes.length - 1; i >= 0; i--) {
+        if (ctx.isPointInPath(this.shapes[i].path, bufferX, bufferY)) {
+          hit = this.shapes[i];
+          break;
+        }
+      }
+    }
     if (!hit) {
       tooltip.style.display = 'none';
       this.setHighlight(null);
@@ -336,8 +352,8 @@ export class FloorPlanPanelComponent implements OnChanges, AfterViewInit, OnDest
     tooltip.innerHTML = `
       <div class="tooltip-title"><span class="tooltip-swatch" style="background:${hit.stroke}"></span>${hit.zone.zoneName}</div>
       <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Total Footfall</span><b>${hit.zone.traffic.toLocaleString('en-US')}</b></div>
-      <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Unique Footfall</span><b>${hit.zone.visitorTraffic.toLocaleString('en-US')}</b></div>
-      <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Potential Buyers</span><b>${hit.zone.attentionVisitors.toLocaleString('en-US')}</b></div>
+      <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Unique Footfall</span><b>${hit.zone.visitors.toLocaleString('en-US')}</b></div>
+      <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Attention Visitors</span><b>${hit.zone.attentionVisitors.toLocaleString('en-US')}</b></div>
       <div class="tooltip-row"><span style="color:rgba(255,255,255,0.7);margin-right:14px">Avg Dwell</span><b>${this.formatDuration(hit.zone.avgResidenceTime)}</b></div>
     `;
 

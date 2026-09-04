@@ -274,7 +274,7 @@
 .comparison-kpi-tile,
 .summary-tile {
   margin: 0;
-  padding: 26px 28px;
+  padding: 14px 18px;
   border: 1px solid #eeeeee !important;
   background: linear-gradient(135deg, #ffffff 0%, #e9eef2 100%);
   box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14) !important;
@@ -282,13 +282,7 @@
 
 .comparison-kpi-tile .stat-value,
 .summary-tile .stat-value {
-  font-size: 40px;
   padding: 6px 0;
-}
-
-.comparison-kpi-tile .stat-label,
-.summary-tile .stat-label {
-  font-size: 13px;
 }
 
 .chart-card,
@@ -325,6 +319,7 @@
 .chart-sub,
 .periodic-sub {
   font-size: 11.5px;
+  font-weight: 500;
   color: var(--ink-muted);
 }
 
@@ -356,7 +351,7 @@
 .periodic-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 400;
   white-space: nowrap;
 }
@@ -507,16 +502,6 @@
 }
 
 @media (max-width: 600px) {
-  .comparison-kpi-tile,
-  .summary-tile {
-    padding: 16px 18px;
-  }
-
-  .comparison-kpi-tile .stat-value,
-  .summary-tile .stat-value {
-    font-size: 28px;
-  }
-
   .chart-card,
   .periodic-card {
     padding: 14px !important;

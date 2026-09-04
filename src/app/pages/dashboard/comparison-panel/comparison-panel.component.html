@@ -71,12 +71,6 @@
           Compare the current filtered period against the previous equivalent range with a clearer bar-based traffic view.
         </div>
       </div>
-      <div class="view-by-block">
-        <span class="filter-caption">View By</span>
-        <select class="view-by-select" [ngModel]="viewBy" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onViewByChange($event)">
-          <option *ngFor="let v of viewByOptions" [value]="v">{{ v }}</option>
-        </select>
-      </div>
     </div>
 
     <div class="kpi-grid">
@@ -129,8 +123,16 @@
 
     <div class="xros-card chart-card">
       <div class="chart-header">
-        <div class="chart-title">Daily Distribution</div>
-        <div class="chart-sub">{{ currentRangeLabel }} vs {{ previousRangeLabel }}</div>
+        <div>
+          <div class="chart-title">Daily Distribution</div>
+          <div class="chart-sub">{{ currentRangeLabel }} vs {{ previousRangeLabel }}</div>
+        </div>
+        <div class="view-by-block">
+          <span class="filter-caption">View By</span>
+          <select class="view-by-select" [ngModel]="viewBy" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onViewByChange($event)">
+            <option *ngFor="let v of viewByOptions" [value]="v">{{ v }}</option>
+          </select>
+        </div>
       </div>
       <highcharts-chart
         [Highcharts]="Highcharts"
