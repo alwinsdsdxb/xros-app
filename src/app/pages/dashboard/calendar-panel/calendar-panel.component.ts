@@ -917,7 +917,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
 
   private buildAvailableMonths(monthStart: Date): CalendarAvailableMonth[] {
     const months: CalendarAvailableMonth[] = [];
-    for (let i = MONTHS_OF_HISTORY; i >= 0; i--) {
+    for (let i = 0; i <= MONTHS_OF_HISTORY; i++) {
       const d = this.addMonths(this.startOfMonth(new Date()), -i);
       months.push({ value: this.formatDate(d).slice(0, 7), label: this.formatMonthLabel(d) });
     }
@@ -925,8 +925,8 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     const currentKey = this.formatDate(monthStart).slice(0, 7);
     if (!months.some((m) => m.value === currentKey)) {
       months.push({ value: currentKey, label: this.formatMonthLabel(monthStart) });
-      months.sort((a, b) => (a.value < b.value ? -1 : 1));
     }
+    months.sort((a, b) => (a.value < b.value ? 1 : -1));
 
     return months;
   }
