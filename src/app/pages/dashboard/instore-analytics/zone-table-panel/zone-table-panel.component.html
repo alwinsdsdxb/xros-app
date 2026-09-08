@@ -11,10 +11,12 @@
       class="zone-chip"
       *ngFor="let z of zones"
       [class.active]="isSelected(z.key)"
+      [attr.aria-pressed]="isSelected(z.key)"
       (click)="toggleZone(z.key)"
     >
       <span class="chip-dot" [style.background]="colorForZone(z.key)"></span>
       {{ z.label }}
+      <mat-icon class="chip-check" *ngIf="isSelected(z.key)">check</mat-icon>
     </button>
   </div>
 

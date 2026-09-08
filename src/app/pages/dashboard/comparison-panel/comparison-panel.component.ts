@@ -270,10 +270,10 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   }
 
   // Column order/labels mirror the table's own group-header-row exactly
-  // (Day / Period to Date / Year to Date) - see toPeriodicAnalysis(), which
+  // (Day / Month to Date / Year to Date) - see toPeriodicAnalysis(), which
   // fills row.groups in this same fixed order regardless of the API's own
   // label ordering.
-  private readonly periodicGroupLabels = ['Day', 'Period to Date', 'Year to Date'];
+  private readonly periodicGroupLabels = ['Day', 'Month to Date', 'Year to Date'];
 
   exportPeriodicCsv(): void {
     const header = ['Date', 'Day'];

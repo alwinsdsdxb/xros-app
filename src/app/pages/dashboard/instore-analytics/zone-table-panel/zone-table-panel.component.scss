@@ -25,6 +25,12 @@
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.zone-chip:hover:not(:disabled):not(.active) {
+  border-color: var(--ink-muted);
+  background: var(--page-plane, #f4f6f9);
 }
 
 .zone-chip.active {
@@ -33,9 +39,28 @@
   color: #ffffff;
 }
 
+.zone-chip.active:hover:not(:disabled) {
+  box-shadow: 0 0 0 3px rgba(15, 76, 115, 0.22);
+}
+
+.zone-chip:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
 .zone-chip:disabled {
   opacity: 0.45;
   cursor: not-allowed;
+}
+
+// Only rendered on selected chips (see [class.active] pairing with *ngIf on
+// the checkmark in the template) - white to match the active chip's filled
+// navy background/text.
+.chip-check {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: #ffffff;
 }
 
 .bulk-chip {
