@@ -77,7 +77,6 @@ export interface ZoneCorrelation {
   strongestFlow: ZoneHighlight;
   highestCapture: ZoneHighlight;
   engagementLeader: ZoneHighlight;
-  avgZonesPerVisit: StatTile;
   flows: ZoneFlowLink[];
 }
 

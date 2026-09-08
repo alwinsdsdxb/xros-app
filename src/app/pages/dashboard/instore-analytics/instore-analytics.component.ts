@@ -785,10 +785,13 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   }
 
   // The widget only returns raw zone-to-zone flow volumes (source/target/value) -
-  // no capture rate, dwell/engagement, or journey-depth metrics exist on this
-  // tenant yet, so those three tiles stay as an explicit "no data" state rather
-  // than showing fabricated numbers. Strongest Flow is real: the single
-  // highest-weight link in the same dataset.
+  // no capture rate or dwell/engagement metrics exist on this tenant yet, so
+  // those two tiles stay as an explicit "no data" state here (zone-correlation-
+  // panel.component.ts's highestCaptureTile/engagementLeaderTile getters fill
+  // them in for real from the Zone Table's per-zone data instead). Strongest
+  // Flow is real: the single highest-weight link in the same dataset. Avg
+  // Zones / Visit was dropped entirely - no per-visit journey data exists to
+  // derive it from, real or otherwise.
   private toZoneCorrelation(filters: KpiDataFilterResult[]): ZoneCorrelation {
     const points = filters[0]?.data ?? [];
     const flows: ZoneFlowLink[] = points
@@ -804,7 +807,6 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         : noData,
       highestCapture: noData,
       engagementLeader: noData,
-      avgZonesPerVisit: { value: '—', sub: 'No data' },
       flows
     };
   }

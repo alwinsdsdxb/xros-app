@@ -169,3 +169,10 @@
   padding: 3px 10px;
   border-radius: 999px;
 }
+
+// Only 3 highlight tiles here (Avg Zones / Visit was removed - no real data
+// source exists for it) - override the global 4-column .highlight-grid
+// shared with zone-table-panel so these three don't leave an empty gap.
+.highlight-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
