@@ -19,11 +19,14 @@
         <span class="comparison-value">{{ c.value | number }}</span>
         <span
           class="delta-pill"
-          [class.delta-positive]="c.changePct >= 0"
-          [class.delta-negative]="c.changePct < 0"
+          [class.delta-positive]="c.hasBaseline && c.changePct >= 0"
+          [class.delta-negative]="c.hasBaseline && c.changePct < 0"
         >
-          <mat-icon class="change-arrow">{{ c.changePct >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
-          {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct | number: '1.0-0' }}%
+          <ng-container *ngIf="c.hasBaseline; else noBaseline">
+            <mat-icon class="change-arrow">{{ c.changePct >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            {{ c.changePct >= 0 ? '+' : '' }}{{ c.changePct | number: '1.0-0' }}%
+          </ng-container>
+          <ng-template #noBaseline>—</ng-template>
         </span>
       </div>
       <span class="comparison-date" *ngIf="c.dateLabel">{{ c.dateLabel }}</span>

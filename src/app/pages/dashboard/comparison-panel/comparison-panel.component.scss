@@ -232,13 +232,6 @@
   margin-bottom: 8px;
 }
 
-.comparison-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--ink-primary);
-  margin-bottom: 4px;
-}
-
 .comparison-desc {
   font-size: 13px;
   color: var(--ink-secondary);
@@ -342,6 +335,72 @@
   border-color: var(--ink-muted);
 }
 
+.export-wrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.export-btn mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.export-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.export-btn:disabled:hover {
+  background: none;
+  border-color: var(--gridline);
+}
+
+// Plain CSS dropdown, not mat-menu - see exportMenuOpen's comment in the
+// component for why (CDK Overlay positioning is broken by this app's global
+// zoom:0.8 hack). Positioned relative to .export-wrap, so it's immune to the
+// viewport-rect math that breaks under zoom.
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  min-width: 140px;
+  background: #ffffff;
+  border: 1px solid var(--gridline);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(38, 50, 56, 0.16);
+  padding: 6px;
+}
+
+.export-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-primary);
+  cursor: pointer;
+}
+
+.export-option:hover {
+  background: var(--page-plane, #f8fafb);
+}
+
+.export-option mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-muted);
+}
+
 .periodic-table-scroll {
   overflow-x: auto;
   border: 1px solid var(--border-hairline);
@@ -395,6 +454,19 @@
 
 .period-cell {
   text-align: left;
+}
+
+.no-periodic-data {
+  text-align: center;
+  color: var(--ink-muted);
+  font-size: 13px;
+  padding: 24px 0;
+}
+
+.periodic-legend {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--ink-muted);
 }
 
 .period-date {

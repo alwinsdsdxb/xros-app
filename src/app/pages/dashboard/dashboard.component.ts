@@ -7,6 +7,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload, buildMultiStoreKpiPayload } from '../../core/services/kpi.service';
 import { WidgetService } from '../../core/services/widget.service';
 import { StoreContextService } from '../../core/services/store-context.service';
+import { FilterStateService, SharedFilterState } from '../../core/services/filter-state.service';
 import {
   AgeGroup,
   CampaignEvent,
@@ -213,16 +214,42 @@ export class DashboardComponent implements OnInit {
     private widgetService: WidgetService,
     private kpiService: KpiService,
     private storeContextService: StoreContextService,
+    private filterStateService: FilterStateService,
     private route: ActivatedRoute,
     private router: Router
   ) {
+    const shared = this.filterStateService.snapshot;
     this.filterForm = this.fb.group({
-      store: ['all'],
-      view: ['Month'],
-      date: [new Date()],
-      customRange: this.fb.group({ start: [null], end: [null] }),
-      operationalHours: [1]
+      store: [shared.store],
+      view: [shared.view],
+      date: [shared.date],
+      customRange: this.fb.group({ start: [shared.customRange.start], end: [shared.customRange.end] }),
+      operationalHours: [shared.operationalHours]
     });
+  }
+
+  // Fires on every publish to the shared filter state, including this tab's
+  // own (Apply always publishes right before fetch() runs) - the equality
+  // check is what tells those two cases apart, so this tab never refetches
+  // itself a second time right after its own Apply.
+  private onSharedFilterState(state: SharedFilterState): void {
+    if (FilterStateService.equal(state, this.currentSharedFilterState())) {
+      return;
+    }
+    this.filterForm.patchValue(
+      { store: state.store, view: state.view, date: state.date, operationalHours: state.operationalHours, customRange: state.customRange },
+      { emitEvent: false }
+    );
+    this.fetch();
+  }
+
+  private currentSharedFilterState(): SharedFilterState {
+    const { store, view, date, operationalHours, customRange } = this.filterForm.value;
+    return { store, view, date, operationalHours, customRange: customRange ?? { start: null, end: null } };
+  }
+
+  private publishFilterState(): void {
+    this.filterStateService.setState(this.currentSharedFilterState());
   }
 
   get customRangeGroup(): FormGroup {
@@ -242,6 +269,8 @@ export class DashboardComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.filterStateService.state$.subscribe((state) => this.onSharedFilterState(state));
+
     this.widgetService.getDashboards().subscribe((dashboards) => (this.dashboards = dashboards));
 
     this.route.paramMap.subscribe((params) => {
@@ -265,6 +294,7 @@ export class DashboardComponent implements OnInit {
   }
 
   apply(): void {
+    this.publishFilterState();
     this.fetch();
   }
 
@@ -678,9 +708,16 @@ export class DashboardComponent implements OnInit {
     );
   }
 
+  // A previous value of exactly 0 can never produce a meaningful percentage
+  // (current-vs-0 is mathematically undefined) - hasBaseline: false tells the
+  // KPI card to render a neutral "no prior data" state instead of a colored
+  // +0% that would misread as measured flat/positive performance. Same rule
+  // computeChange() already applies to the Calendar tab's LM/LY deltas.
   private toComparisonPoint(current: number, previous: number): ComparisonPoint {
-    const changePct = previous > 0 ? Math.round(((current - previous) / previous) * 100) : 0;
-    return { value: previous, changePct };
+    if (previous <= 0) {
+      return { value: previous, changePct: 0, hasBaseline: false };
+    }
+    return { value: previous, changePct: Math.round(((current - previous) / previous) * 100), hasBaseline: true };
   }
 
   // "Trend Report" only has Total Footfall/Unique Footfall dataFilter entries.

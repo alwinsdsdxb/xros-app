@@ -6,6 +6,7 @@ interface ComparisonRow {
   dateLabel: string;
   value: number;
   changePct: number;
+  hasBaseline: boolean;
 }
 
 export interface ComparisonDateLabels {
@@ -54,20 +55,23 @@ export class KpiCardComponent {
       label: 'Previous Week',
       dateLabel: dateLabels?.week ?? '',
       value: this.metric.previousWeek.value,
-      changePct: this.metric.previousWeek.changePct
+      changePct: this.metric.previousWeek.changePct,
+      hasBaseline: this.metric.previousWeek.hasBaseline
     };
     const monthAndYear = [
       {
         label: 'Previous Month',
         dateLabel: dateLabels?.month ?? '',
         value: this.metric.previousMonth.value,
-        changePct: this.metric.previousMonth.changePct
+        changePct: this.metric.previousMonth.changePct,
+        hasBaseline: this.metric.previousMonth.hasBaseline
       },
       {
         label: 'Previous Year',
         dateLabel: dateLabels?.year ?? '',
         value: this.metric.previousYear.value,
-        changePct: this.metric.previousYear.changePct
+        changePct: this.metric.previousYear.changePct,
+        hasBaseline: this.metric.previousYear.hasBaseline
       }
     ];
     if (this.view === 'Week') {
@@ -82,7 +86,8 @@ export class KpiCardComponent {
         label: 'Previous Day',
         dateLabel: dateLabels?.day ?? '',
         value: this.metric.previousDay.value,
-        changePct: this.metric.previousDay.changePct
+        changePct: this.metric.previousDay.changePct,
+        hasBaseline: this.metric.previousDay.hasBaseline
       },
       previousWeek,
       ...monthAndYear

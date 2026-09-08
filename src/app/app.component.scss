@@ -1,12 +1,34 @@
-// `zoom` (styles.scss) rescales percentage-based layout consistently, but
-// leaves `vh`/`vw` tied to the real, unzoomed viewport - so any full-page
+// Desktop-density scale, replacing the old `zoom: 0.8` (see styles.scss for
+// why) - width/height:125% lays this element out 25% larger than the real
+// viewport in both dimensions, then transform scales the whole rendered
+// subtree back down by 0.8, landing exactly on 100% of the real viewport.
+// transform-origin: 0 0 keeps the top-left corner anchored so the scaled
+// box still starts at the page's actual top-left instead of shrinking
+// toward its own center.
+//
+// Like `zoom`, this rescales percentage-based layout consistently but
+// leaves `vh`/`vw` tied to the real, unscaled viewport - so any full-page
 // layout built on 100vh (shell, login, forgot/reset-password) needs a real
 // height chain to fall back on instead. html/body already declare
 // height:100% (styles.scss); app-root is the next link since routed page
 // components render as its direct children.
+//
+// Scoped to desktop widths only, matching the old zoom rule - mobile/tablet
+// layouts are authored to their own real CSS-pixel breakpoints and should
+// render at normal (unscaled) size.
 :host {
   display: block;
   height: 100%;
+}
+
+@media (min-width: 900px) {
+  :host {
+    display: block;
+    width: 125%;
+    height: 125%;
+    transform: scale(0.8);
+    transform-origin: 0 0;
+  }
 }
 
 .route-progress {

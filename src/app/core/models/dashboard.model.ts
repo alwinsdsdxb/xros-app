@@ -1,6 +1,10 @@
 export interface ComparisonPoint {
   value: number;
   changePct: number;
+  // false when the prior period's value is 0 (or otherwise unavailable) -
+  // current-vs-0 has no meaningful percentage, so the UI must render a
+  // neutral state instead of a colored +/-% (see toComparisonPoint()).
+  hasBaseline: boolean;
 }
 
 export interface KpiMetric {

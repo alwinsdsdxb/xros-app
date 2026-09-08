@@ -133,6 +133,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   row-gap: 6px;
+  margin-bottom: 10px;
 }
 
 .forecast-header-row .section-tag {
@@ -148,13 +149,6 @@
   border-radius: 20px;
   background: var(--delta-good-bg);
   color: var(--delta-good);
-}
-
-.forecast-title {
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--ink-primary);
-  margin: 10px 0 4px;
 }
 
 .forecast-subtitle {

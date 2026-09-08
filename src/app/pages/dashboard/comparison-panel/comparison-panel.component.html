@@ -66,7 +66,7 @@
     <div class="comparison-header-row">
       <div class="comparison-header-text">
         <span class="section-tag">COMPARISON</span>
-        <div class="comparison-title">Daily Distribution</div>
+        <div class="page-section-title">Daily Distribution</div>
         <div class="comparison-desc">
           Compare the current filtered period against the previous equivalent range with a clearer bar-based traffic view.
         </div>
@@ -86,10 +86,14 @@
       </div>
       <div class="xros-card comparison-kpi-tile">
         <div class="stat-label">Variation</div>
-        <div class="stat-value" [class.delta-positive]="variationPct >= 0" [class.delta-negative]="variationPct < 0">
-          {{ variationPct >= 0 ? '+' : '' }}{{ variationPct }}%
+        <div
+          class="stat-value"
+          [class.delta-positive]="variationHasBaseline && variationPct >= 0"
+          [class.delta-negative]="variationHasBaseline && variationPct < 0"
+        >
+          {{ variationHasBaseline ? (variationPct >= 0 ? '+' : '') + variationPct + '%' : '—' }}
         </div>
-        <div class="stat-sub">vs previous comparison window</div>
+        <div class="stat-sub">vs {{ previousRangeLabel }}</div>
       </div>
       <div class="xros-card comparison-kpi-tile">
         <div class="stat-label">Daily Average</div>
@@ -146,7 +150,28 @@
       <div class="periodic-header">
         <div>
           <div class="periodic-title">Periodic Analysis</div>
-          <div class="periodic-sub">Day, month-to-date, and year-to-date variance report</div>
+          <div class="periodic-sub">Day, period-to-date, and year-to-date variance report</div>
+        </div>
+        <div class="export-wrap">
+          <button
+            type="button"
+            class="customize-btn export-btn"
+            (click)="exportMenuOpen = !exportMenuOpen"
+            [disabled]="!periodicRows.length"
+          >
+            <mat-icon>file_download</mat-icon>
+            Export
+          </button>
+          <div class="export-dropdown" *ngIf="exportMenuOpen">
+            <button type="button" class="export-option" (click)="exportPeriodicCsv(); exportMenuOpen = false">
+              <mat-icon>description</mat-icon>
+              <span>CSV</span>
+            </button>
+            <button type="button" class="export-option" (click)="exportPeriodicXml(); exportMenuOpen = false">
+              <mat-icon>code</mat-icon>
+              <span>XML</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -156,27 +181,30 @@
             <tr class="group-header-row">
               <th colspan="2" class="period-col">Period</th>
               <th colspan="4" class="group-day">Day</th>
-              <th colspan="4" class="group-mtd">Month to Date</th>
+              <th colspan="4" class="group-mtd">Period to Date</th>
               <th colspan="4" class="group-ytd">Year to Date</th>
             </tr>
             <tr class="sub-header-row">
               <th class="sub-period">Date</th>
               <th class="sub-period">Day</th>
-              <th class="sub-day">Traffic</th>
-              <th class="sub-day">Traffic LY</th>
+              <th class="sub-day">UF</th>
+              <th class="sub-day">UF LY</th>
               <th class="sub-day">Variation</th>
               <th class="sub-day">Variation %</th>
-              <th class="sub-mtd">Traffic</th>
-              <th class="sub-mtd">Traffic LY</th>
+              <th class="sub-mtd">UF</th>
+              <th class="sub-mtd">UF LY</th>
               <th class="sub-mtd">Variation</th>
               <th class="sub-mtd">Variation %</th>
-              <th class="sub-ytd">Traffic</th>
-              <th class="sub-ytd">Traffic LY</th>
+              <th class="sub-ytd">UF</th>
+              <th class="sub-ytd">UF LY</th>
               <th class="sub-ytd">Variation</th>
               <th class="sub-ytd">Variation %</th>
             </tr>
           </thead>
           <tbody>
+            <tr *ngIf="!loading && !periodicRows.length">
+              <td class="period-cell no-periodic-data" colspan="14">No periodic analysis data for this period.</td>
+            </tr>
             <tr *ngFor="let row of periodicRows">
               <td class="period-cell period-date">{{ row.date }}</td>
               <td class="period-cell period-day">{{ row.day }}</td>
@@ -186,8 +214,8 @@
                 <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
                   {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
                 </td>
-                <td class="num-cell" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
-                  {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
+                <td class="num-cell" [class.delta-positive]="g.hasBaseline && g.variationPct >= 0" [class.delta-negative]="g.hasBaseline && g.variationPct < 0">
+                  {{ g.hasBaseline ? (g.variationPct >= 0 ? '+' : '') + g.variationPct + '%' : '—' }}
                 </td>
               </ng-container>
             </tr>
@@ -201,14 +229,15 @@
                 <td class="num-cell" [class.delta-positive]="g.variation >= 0" [class.delta-negative]="g.variation < 0">
                   {{ g.variation >= 0 ? '+' : '' }}{{ g.variation | number }}
                 </td>
-                <td class="num-cell" [class.delta-positive]="g.variationPct >= 0" [class.delta-negative]="g.variationPct < 0">
-                  {{ g.variationPct >= 0 ? '+' : '' }}{{ g.variationPct }}%
+                <td class="num-cell" [class.delta-positive]="g.hasBaseline && g.variationPct >= 0" [class.delta-negative]="g.hasBaseline && g.variationPct < 0">
+                  {{ g.hasBaseline ? (g.variationPct >= 0 ? '+' : '') + g.variationPct + '%' : '—' }}
                 </td>
               </ng-container>
             </tr>
           </tfoot>
         </table>
       </div>
+      <div class="periodic-legend">UF = Unique Footfall</div>
     </div>
   </div>
 </div>

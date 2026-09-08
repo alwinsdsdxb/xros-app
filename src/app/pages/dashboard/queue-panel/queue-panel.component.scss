@@ -50,13 +50,16 @@
 // Mirrors the Dashboard/Instore Analytics tabs' filter-bar exactly (same
 // .filter-box pill treatment, 10px gap, 34px control height) so all three
 // tabs' filter rows read as one consistent system.
+// flex-wrap: wrap - matches the Dashboard/Instore/Comparison tabs' own
+// .filter-bar, so this tab's filter row wraps under pressure instead of
+// clipping the Hours toggle/Apply button off-screen behind a horizontal
+// scrollbar.
 .filter-bar {
   display: flex;
   flex-direction: row;
   align-items: flex-end;
   gap: 12px;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .filter-box {

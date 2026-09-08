@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { Observable, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import * as Highcharts from 'highcharts';
@@ -6,8 +6,9 @@ import { MatDatepicker } from '@angular/material/datepicker';
 import { AuthService } from '../../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload, buildMultiStoreKpiPayload } from '../../../core/services/kpi.service';
 import { WidgetService } from '../../../core/services/widget.service';
+import { FilterStateService, SharedFilterState } from '../../../core/services/filter-state.service';
 import { DashboardGroup, DashboardSummary, EventListItem, Widget } from '../../../core/models/widget.model';
-import { KpiDataFilterResult } from '../../../core/models/kpi.model';
+import { KpiDataFilterResult, KpiDataPoint } from '../../../core/models/kpi.model';
 import { CampaignEvent } from '../../../core/models/dashboard.model';
 import { StatTile } from '../../../core/models/instore-analytics.model';
 import { environment } from '../../../../environments/environment';
@@ -17,15 +18,14 @@ const TREND_REPORT_WIDGET_TITLE = 'Trend Report';
 const INSTORE_GROUP_NAME = 'Instore Analytics';
 const POWER_HOUR_WIDGET_TITLE = 'Power Hour Footfall';
 const ENTRANCE_CATEGORY_NAME = 'Entrance';
-// Real widget confirmed live via GET /widget/list/{groupId} - a "Comparison"
-// group holds a widgetType:"compareDate"/fetchDataFor:"table" widget titled
-// "Periodic Analysis" whose compareDateConfig (date1 "Day" / date2 "Period to
-// Date" / date3 "Year to Date", valueType.lastYear, tableAggregator
-// total/average/weekday/weekend) matches this table's placeholder structure
-// almost exactly. groupName isn't confirmed yet (the widget list only carries
-// groupId) - "Comparison" is a best guess matching the tab's own name; see the
-// console.warn fallback below if it doesn't match live.
-const COMPARISON_GROUP_NAME = 'Comparison';
+// Real widget confirmed live via GET /widget/list/{groupId} - a "Comparison
+// Report" group holds a widgetType:"compareDate"/fetchDataFor:"table" widget
+// titled "Periodic Analysis" whose compareDateConfig (date1 "Day" / date2
+// "Period to Date" / date3 "Year to Date", valueType.lastYear,
+// tableAggregator total/average/weekday/weekend) matches this table's
+// structure exactly (confirmed live 2026-09-08 - see the console.warn
+// fallback below if it ever stops matching again).
+const COMPARISON_GROUP_NAME = 'Comparison Report';
 const PERIODIC_ANALYSIS_WIDGET_TITLE = 'Periodic Analysis';
 const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -45,6 +45,11 @@ interface PeriodicGroupStat {
   trafficLy: number;
   variation: number;
   variationPct: number;
+  // false when trafficLy is 0 - current-vs-0 has no meaningful percentage,
+  // so the UI renders a neutral "-" instead of a colored +/-% (see
+  // toGroupStat() and the same rule already applied to the Dashboard KPI
+  // cards and Calendar tab).
+  hasBaseline: boolean;
 }
 
 interface PeriodicAnalysisRow {
@@ -94,6 +99,7 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   currentTotal = 0;
   previousTotal = 0;
   variationPct = 0;
+  variationHasBaseline = false;
   dailyAverage = 0;
   activeDaysCount = 0;
 
@@ -113,15 +119,20 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   readonly viewByOptions = ['Daily', 'Weekly', 'Monthly'];
   viewBy: 'Daily' | 'Weekly' | 'Monthly' = 'Daily';
 
-  // Periodic Analysis is UI-only for now - the user hasn't confirmed the real
-  // Periodic Analysis widget's POST /kpi/data response shape yet (see
-  // fetchPeriodicAnalysisDiagnostic), so these stay placeholder numbers. Rows
-  // span day 1 of the current month through today, rather than a handful of
-  // fixed dates from the reference screenshot, so the table doesn't visibly
-  // drift out of date as time passes.
-  // TODO: replace with real API data once the response shape is confirmed.
-  readonly periodicRows: PeriodicAnalysisRow[];
-  readonly periodicSummaryRows: PeriodicAnalysisSummaryRow[];
+  // Real data from the "Periodic Analysis" widget (see fetchPeriodicAnalysis/
+  // toPeriodicAnalysis) - one row per calendar day of the current
+  // month-to-date, populated by fetch().
+  periodicRows: PeriodicAnalysisRow[] = [];
+  periodicSummaryRows: PeriodicAnalysisSummaryRow[] = [];
+
+  // Plain CSS dropdown, not mat-menu - the CDK Overlay this app's other
+  // dropdowns (mat-select, mat-datepicker) rely on positions itself using
+  // getBoundingClientRect()/viewport math that's thrown off by the global
+  // `zoom: 0.8` on <html> in styles.scss (a documented Angular CDK bug,
+  // github.com/angular/components/issues/29424 - the overlay lands far from
+  // its trigger). A plain `position: absolute` dropdown anchored to its own
+  // wrapper sidesteps that viewport math entirely.
+  exportMenuOpen = false;
 
   private footfallGroup: DashboardGroup | null = null;
   private instoreGroup: DashboardGroup | null = null;
@@ -138,57 +149,49 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private authService: AuthService,
     private widgetService: WidgetService,
-    private kpiService: KpiService
+    private kpiService: KpiService,
+    private filterStateService: FilterStateService,
+    private elementRef: ElementRef<HTMLElement>
   ) {
+    const shared = this.filterStateService.snapshot;
     this.filterForm = this.fb.group({
-      store: ['all'],
-      view: ['Month'],
-      date: [new Date()],
-      operationalHours: [1]
+      store: [shared.store],
+      view: [shared.view],
+      date: [shared.date],
+      operationalHours: [shared.operationalHours]
     });
-
-    this.periodicRows = this.buildPlaceholderPeriodicRows();
-    this.periodicSummaryRows = this.buildPlaceholderSummaryRows(this.periodicRows);
   }
 
-  // Deterministic (not Math.random()) so the placeholder numbers stay stable
-  // across re-renders/screenshots rather than jittering. Day and Month-to-Date
-  // are kept equal per row, matching the reference screenshot's own
-  // convention; Year-to-Date grows across rows the same way the reference's
-  // did (see PERIODIC_ANALYSIS_WIDGET_TITLE comment for why this isn't wired
-  // to the real widget yet).
-  private buildPlaceholderPeriodicRows(): PeriodicAnalysisRow[] {
-    const today = new Date();
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-    const dayCount = today.getDate();
-    const monthsElapsed = today.getMonth() + 1;
-
-    const rows: PeriodicAnalysisRow[] = [];
-
-    for (let dayNum = 1; dayNum <= dayCount; dayNum++) {
-      const date = new Date(monthStart.getFullYear(), monthStart.getMonth(), dayNum);
-      const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-
-      const dayTraffic = Math.round(2200 + 500 * Math.sin(dayNum * 1.7) + (isWeekend ? 700 : 0));
-      const dayTrafficLy = Math.round(dayTraffic * (0.82 + 0.25 * Math.cos(dayNum * 0.9)));
-      const day = this.toGroupStat(dayTraffic, dayTrafficLy);
-
-      const ytdTraffic = Math.round((dayTraffic * dayNum + dayTraffic * 45) * monthsElapsed);
-      const ytdTrafficLy = Math.round(ytdTraffic * 0.34);
-      const ytd = this.toGroupStat(ytdTraffic, ytdTrafficLy);
-
-      rows.push({
-        date: date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-        day: date.toLocaleDateString('en-US', { weekday: 'short' }),
-        dayNum,
-        groups: [day, day, ytd]
-      });
+  // See dashboard.component.ts's onSharedFilterState - same pattern, shared
+  // across every tab so Store/View/Date/Hours picked on one tab is what's
+  // already applied when you switch to another.
+  private onSharedFilterState(state: SharedFilterState): void {
+    if (FilterStateService.equal(state, this.currentSharedFilterState())) {
+      return;
     }
-
-    return rows;
+    this.filterForm.patchValue(
+      { store: state.store, view: state.view, date: state.date, operationalHours: state.operationalHours },
+      { emitEvent: false }
+    );
+    this.fetch();
   }
 
-  private buildPlaceholderSummaryRows(rows: PeriodicAnalysisRow[]): PeriodicAnalysisSummaryRow[] {
+  private currentSharedFilterState(): SharedFilterState {
+    const { store, view, date, operationalHours } = this.filterForm.value;
+    return { store, view, date, operationalHours, customRange: this.filterStateService.snapshot.customRange };
+  }
+
+  private publishFilterState(): void {
+    this.filterStateService.setState(this.currentSharedFilterState());
+  }
+
+  // Period to Date / Year to Date are already cumulative running totals per
+  // row (the real widget returns each day's value already including every
+  // prior day in the period) - the most recent row's value IS the period
+  // total, so those two columns take the last row rather than being summed
+  // (which would double-count). Only the Day column is a true daily value,
+  // so it's the only one meaningfully summed/averaged/split by weekday.
+  private buildSummaryRows(rows: PeriodicAnalysisRow[]): PeriodicAnalysisSummaryRow[] {
     if (!rows.length) {
       return [];
     }
@@ -198,24 +201,31 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
     const weekdayGroups = rows.filter((r) => !weekendDays.includes(r.day)).map((r) => r.groups[0]);
     const weekendGroups = rows.filter((r) => weekendDays.includes(r.day)).map((r) => r.groups[0]);
 
-    const total = this.sumGroupStats(dayGroups);
-    const average = this.averageGroupStat(total, dayGroups.length);
+    const dayTotal = this.sumGroupStats(dayGroups);
+    const dayAverage = this.averageGroupStat(dayTotal, dayGroups.length);
     const weekdayTotal = this.sumGroupStats(weekdayGroups);
     const weekendTotal = this.sumGroupStats(weekendGroups);
-    const ytdLast = rows[rows.length - 1].groups[2];
+    const lastRow = rows[rows.length - 1];
+    const periodToDateLast = lastRow.groups[1];
+    const yearToDateLast = lastRow.groups[2];
 
     return [
-      { label: 'Total', groups: [total, total, ytdLast] },
-      { label: 'Average', groups: [average, average, ytdLast] },
-      { label: 'Weekday', groups: [weekdayTotal, weekdayTotal, weekdayTotal] },
-      { label: 'Weekend', groups: [weekendTotal, weekendTotal, weekendTotal] }
+      { label: 'Total', groups: [dayTotal, periodToDateLast, yearToDateLast] },
+      { label: 'Average', groups: [dayAverage, periodToDateLast, yearToDateLast] },
+      { label: 'Weekday', groups: [weekdayTotal, periodToDateLast, yearToDateLast] },
+      { label: 'Weekend', groups: [weekendTotal, periodToDateLast, yearToDateLast] }
     ];
   }
 
+  // trafficLy of 0 means no real baseline (current-vs-0 has no meaningful
+  // percentage) - hasBaseline: false tells the table to render "-" instead
+  // of a colored +/-% that would misread as measured growth.
   private toGroupStat(traffic: number, trafficLy: number): PeriodicGroupStat {
     const variation = traffic - trafficLy;
-    const variationPct = trafficLy > 0 ? Math.round((variation / trafficLy) * 100) : 0;
-    return { traffic, trafficLy, variation, variationPct };
+    if (trafficLy <= 0) {
+      return { traffic, trafficLy, variation, variationPct: 0, hasBaseline: false };
+    }
+    return { traffic, trafficLy, variation, variationPct: Math.round((variation / trafficLy) * 100), hasBaseline: true };
   }
 
   private sumGroupStats(stats: PeriodicGroupStat[]): PeriodicGroupStat {
@@ -232,6 +242,7 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.filterStateService.state$.subscribe((state) => this.onSharedFilterState(state));
     this.resolveWidgets();
   }
 
@@ -242,12 +253,85 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   }
 
   apply(): void {
+    this.publishFilterState();
     this.fetch();
   }
 
   onViewByChange(value: 'Daily' | 'Weekly' | 'Monthly'): void {
     this.viewBy = value;
     this.buildChart();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    if (this.exportMenuOpen && !this.elementRef.nativeElement.querySelector('.export-wrap')?.contains(event.target as Node)) {
+      this.exportMenuOpen = false;
+    }
+  }
+
+  // Column order/labels mirror the table's own group-header-row exactly
+  // (Day / Period to Date / Year to Date) - see toPeriodicAnalysis(), which
+  // fills row.groups in this same fixed order regardless of the API's own
+  // label ordering.
+  private readonly periodicGroupLabels = ['Day', 'Period to Date', 'Year to Date'];
+
+  exportPeriodicCsv(): void {
+    const header = ['Date', 'Day'];
+    this.periodicGroupLabels.forEach((label) => header.push(`${label} UF`, `${label} UF LY`, `${label} Variation`, `${label} Variation %`));
+
+    const rows = [
+      header,
+      ...this.periodicRows.map((r) => [r.date, r.day, ...this.flattenPeriodicGroups(r.groups)]),
+      ...this.periodicSummaryRows.map((r) => [r.label, '', ...this.flattenPeriodicGroups(r.groups)])
+    ];
+
+    const csv = rows.map((row) => row.map((cell) => this.csvEscape(cell)).join(',')).join('\r\n');
+    this.downloadFile(csv, 'periodic-analysis.csv', 'text/csv;charset=utf-8;');
+  }
+
+  exportPeriodicXml(): void {
+    const groupTags = ['day', 'periodToDate', 'yearToDate'];
+    const groupsToXml = (groups: PeriodicGroupStat[]) =>
+      groups
+        .map(
+          (g, i) =>
+            `<${groupTags[i]} uf="${g.traffic}" ufLy="${g.trafficLy}" variation="${g.variation}" variationPct="${
+              g.hasBaseline ? g.variationPct : ''
+            }"/>`
+        )
+        .join('');
+
+    const rowsXml = this.periodicRows
+      .map((r) => `<row date="${this.xmlEscape(r.date)}" day="${this.xmlEscape(r.day)}">${groupsToXml(r.groups)}</row>`)
+      .join('');
+    const summaryXml = this.periodicSummaryRows
+      .map((r) => `<row label="${this.xmlEscape(r.label)}">${groupsToXml(r.groups)}</row>`)
+      .join('');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?><periodicAnalysis><rows>${rowsXml}</rows><summary>${summaryXml}</summary></periodicAnalysis>`;
+    this.downloadFile(xml, 'periodic-analysis.xml', 'application/xml;charset=utf-8;');
+  }
+
+  private flattenPeriodicGroups(groups: PeriodicGroupStat[]): string[] {
+    return groups.flatMap((g) => [String(g.traffic), String(g.trafficLy), String(g.variation), g.hasBaseline ? String(g.variationPct) : '']);
+  }
+
+  private csvEscape(value: string): string {
+    return /[",\r\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+  }
+
+  private xmlEscape(value: string): string {
+    return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  private downloadFile(content: string, filename: string, mimeType: string): void {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 
   // Only fires when the datepicker's startView is 'year' (Month/Year views
@@ -476,40 +560,101 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
       });
 
     this.fetchPeakHour(from, to, store, operationalHours);
-    this.fetchPeriodicAnalysisDiagnostic(d, operationalHours);
+    this.fetchPeriodicAnalysis(d, operationalHours, store);
   }
 
-  // TEMP DIAGNOSTIC - the real "Periodic Analysis" widget (compareDateConfig:
-  // Day/Period to Date/Year to Date, vs Last Year, Total/Average/Weekday/
-  // Weekend aggregators) was confirmed live via GET /widget/list, but its
-  // actual POST /kpi/data response shape for a widgetType:"compareDate" +
-  // fetchDataFor:"table" widget hasn't been seen yet - none of this app's
-  // existing widget types return that shape. Logs the raw response so the
-  // real parsing/rendering can be written from actual data instead of
-  // guessed; the table itself keeps rendering its static placeholder rows
-  // until that shape is confirmed. Remove this once toPeriodicAnalysis() is
-  // implemented from a real response.
-  private fetchPeriodicAnalysisDiagnostic(date: Date, operationalHours: number): void {
+  // Real "Periodic Analysis" widget (compareDateConfig: Day/Period to
+  // Date/Year to Date, vs Last Year, Total/Average/Weekday/Weekend
+  // aggregators), response shape confirmed live - see toPeriodicAnalysis().
+  private fetchPeriodicAnalysis(date: Date, operationalHours: number, store: string): void {
     if (!this.periodicAnalysisWidget || !this.comparisonGroup) {
+      this.periodicRows = [];
+      this.periodicSummaryRows = [];
       return;
     }
 
     const fromStr = `${this.formatDate(date)} 00:00:00`;
     const toStr = `${this.formatDate(date)} 23:59:59`;
-    const payload = buildKpiDataPayload(this.periodicAnalysisWidget, this.comparisonGroup, fromStr, toStr, undefined, undefined, undefined, operationalHours);
+    const storeIds = store !== 'all' ? [store] : undefined;
+    const payload = buildKpiDataPayload(this.periodicAnalysisWidget, this.comparisonGroup, fromStr, toStr, storeIds, undefined, undefined, operationalHours);
 
     this.kpiService.postKpiData(payload).subscribe({
       next: (res) => {
-        if (!environment.production) {
-          console.log('[ComparisonPanel] TEMP DIAGNOSTIC - raw Periodic Analysis response:', JSON.stringify(res, null, 2));
-        }
+        const { rows, summaryRows } = this.toPeriodicAnalysis(res.data.dataFilter);
+        this.periodicRows = rows;
+        this.periodicSummaryRows = summaryRows;
       },
-      error: (err) => {
-        if (!environment.production) {
-          console.warn('[ComparisonPanel] TEMP DIAGNOSTIC - Periodic Analysis request failed:', err);
-        }
+      error: () => {
+        this.periodicRows = [];
+        this.periodicSummaryRows = [];
       }
     });
+  }
+
+  // Each real data series is labelled "<site>::<store>::<period>::<kpi>[ LY|
+  // Var| Var(%)]" (period is "Day"/"Period to Date"/"Year to Date" per the
+  // widget's own compareDateConfig displayNames - taken positionally in
+  // first-seen order rather than hardcoded, so this still works if those
+  // display names are ever reconfigured). Multiple stores (Store filter
+  // "all") produce one series per store per period/metric - summed
+  // element-by-element rather than picked from just one. The two label-only
+  // filters ("Period::to::Date <year>", "Period::to::Day") carry the
+  // per-row date/weekday text and aren't real KPI series.
+  private toPeriodicAnalysis(filters: KpiDataFilterResult[]): { rows: PeriodicAnalysisRow[]; summaryRows: PeriodicAnalysisSummaryRow[] } {
+    const dateLabels = filters.find((f) => f.label.startsWith('Period::to::Date'))?.data ?? [];
+    const dayLabels = filters.find((f) => f.label === 'Period::to::Day')?.data ?? [];
+    const rowCount = dateLabels.length;
+    if (!rowCount) {
+      return { rows: [], summaryRows: [] };
+    }
+
+    const periodOrder: string[] = [];
+    const seriesByPeriodAndKind = new Map<string, KpiDataPoint[][]>();
+    let dayNumSource: KpiDataPoint[] | null = null;
+
+    for (const f of filters) {
+      if (f.label.startsWith('Period::to::')) {
+        continue;
+      }
+      const parts = f.label.split('::');
+      if (parts.length < 4) {
+        continue;
+      }
+      const period = parts[2];
+      const kpiLabel = parts.slice(3).join('::');
+      const kind = kpiLabel.endsWith(' Var(%)') ? 'varPct' : kpiLabel.endsWith(' Var') ? 'var' : kpiLabel.endsWith(' LY') ? 'ly' : 'current';
+
+      if (!periodOrder.includes(period)) {
+        periodOrder.push(period);
+      }
+      if (kind === 'current' && !dayNumSource) {
+        dayNumSource = f.data;
+      }
+
+      const key = `${period}::${kind}`;
+      if (!seriesByPeriodAndKind.has(key)) {
+        seriesByPeriodAndKind.set(key, []);
+      }
+      seriesByPeriodAndKind.get(key)!.push(f.data);
+    }
+
+    const sumAt = (period: string, kind: string, index: number): number =>
+      (seriesByPeriodAndKind.get(`${period}::${kind}`) ?? []).reduce((sum, series) => sum + (Number(series[index]?.value) || 0), 0);
+
+    const periods = periodOrder.slice(0, 3);
+    const rows: PeriodicAnalysisRow[] = [];
+    for (let i = 0; i < rowCount; i++) {
+      const groups = periods.map((period) => this.toGroupStat(sumAt(period, 'current', i), sumAt(period, 'ly', i)));
+      const dayNumStr = dayNumSource?.[i]?.date?.split('-')[0] ?? '';
+      rows.push({
+        date: String(dateLabels[i]?.value ?? ''),
+        day: String(dayLabels[i]?.value ?? ''),
+        dayNum: parseInt(dayNumStr, 10) || i + 1,
+        groups
+      });
+    }
+
+    return { rows, summaryRows: this.buildSummaryRows(rows) };
   }
 
   // Same real "Trend Report" widget dashboard.component.ts's fetchTrafficTrend
@@ -575,7 +720,10 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
   private refreshDerivedStats(): void {
     this.currentTotal = this.currentSeries.reduce((sum, p) => sum + p.value, 0);
     this.previousTotal = this.previousSeries.reduce((sum, p) => sum + p.value, 0);
-    this.variationPct = this.previousTotal > 0 ? Math.round(((this.currentTotal - this.previousTotal) / this.previousTotal) * 100) : 0;
+    this.variationHasBaseline = this.previousTotal > 0;
+    this.variationPct = this.variationHasBaseline
+      ? Math.round(((this.currentTotal - this.previousTotal) / this.previousTotal) * 100)
+      : 0;
     this.activeDaysCount = this.currentSeries.length;
     this.dailyAverage = this.activeDaysCount > 0 ? Math.round(this.currentTotal / this.activeDaysCount) : 0;
 

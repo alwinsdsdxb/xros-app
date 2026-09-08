@@ -95,11 +95,16 @@
   opacity: 0.8;
 }
 
+// Stacked (not side-by-side) so the value always gets the box's full width
+// to lay out in - a narrow grid column previously forced the value + pill
+// onto one row, and whichever one didn't fit (initially the pill, later the
+// value once the pill was made non-shrinking) got clipped/ellipsized. Full
+// width top-to-bottom is the only layout that can't run out of room for
+// either piece.
 .comparison-bottom {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
 }
 
@@ -108,14 +113,12 @@
   font-weight: 700;
   color: var(--ink-primary);
   font-variant-numeric: tabular-nums;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .delta-pill {
-  flex: none;
+  max-width: 100%;
 }
 
 .change-arrow {

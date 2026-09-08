@@ -44,29 +44,19 @@
   cursor: not-allowed;
 }
 
+// flex-wrap: wrap (not nowrap+overflow-x scroll) - matches the Comparison
+// tab's own .filter-bar exactly, so every tab wraps its filters onto a
+// second row under pressure instead of clipping/hiding controls (Hours, the
+// Apply button) off the visible edge. The display:block .filter-box hack
+// below doesn't depend on the row staying single-line - Comparison uses the
+// identical hack and already wraps fine.
 .filter-bar {
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-end;
   gap: 12px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding: 0 !important;
-}
-
-// The filter row's internal height/notch hacks above depend on a flex row
-// that never wraps, so on narrow screens it scrolls horizontally instead of
-// stacking - preserves those hacks while still reaching every filter.
-@media (max-width: 900px) {
-  .filter-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px !important;
-  }
-
-  .filter-box,
-  .apply-btn {
-    flex: none;
-  }
 }
 
 // display:block (not flex) - a mat-form-field's outline notch measures itself

@@ -358,11 +358,13 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
     }
   }
 
-  // "New" (growth from a zero base) still reads as positive news even though
-  // it has no numeric sign; "flat"/"na" are neutral, never colored as a gain
-  // or a drop.
+  // "New" is growth from a zero base - real activity where there was none -
+  // but a zero baseline still makes the growth *rate* meaningless (there's no
+  // denominator to measure it against), so it stays neutral like "flat"/"na"
+  // rather than colored green. Only a genuine, comparable non-zero-baseline
+  // change earns the positive/negative color.
   isPositiveChange(change: ChangeResult): boolean {
-    return change.status === 'new' || (change.status === 'value' && (change.pct ?? 0) >= 0);
+    return change.status === 'value' && (change.pct ?? 0) >= 0;
   }
 
   isNegativeChange(change: ChangeResult): boolean {

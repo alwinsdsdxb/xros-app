@@ -34,12 +34,12 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
   chartOptions: Highcharts.Options = {};
 
   readonly tabs = [
-    { key: 'customer-flow', label: 'Customer Flow', enabled: true },
     { key: 'entrance-flow', label: 'Entrance Flow', enabled: true },
+    { key: 'customer-flow', label: 'Customer Flow', enabled: true },
     { key: 'metric-matrix', label: 'Metric Matrix', enabled: true },
     { key: 'dwell-comparison', label: 'Dwell Comparison', enabled: true }
   ];
-  activeTab = 'customer-flow';
+  activeTab = 'entrance-flow';
 
   // Only show the strongest flows - a wheel/table with every zone-pair link
   // at once is unreadable regardless of chart type (dataviz skill: >~7-8

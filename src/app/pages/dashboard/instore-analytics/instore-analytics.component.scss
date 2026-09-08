@@ -22,28 +22,16 @@
 // Mirrors the main Dashboard tab's filter-bar exactly (same .filter-box
 // pill treatment, 10px gap, 34px control height) so both tabs' filter rows
 // read as one consistent system instead of two different visual languages.
+// flex-wrap: wrap - matches the Dashboard/Comparison tabs' own .filter-bar,
+// so this tab's filter row (and its wider Store/Dashboard boxes) wraps under
+// pressure instead of clipping the Hours toggle/Apply button off-screen.
 .filter-bar {
   display: flex !important;
   flex-direction: row !important;
   align-items: flex-end;
   gap: 12px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   padding: 0 !important;
-}
-
-// Same fixed-height pill filter row as the main Dashboard tab, so it scrolls
-// horizontally on narrow screens instead of wrapping/crushing its controls.
-@media (max-width: 900px) {
-  .filter-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 6px !important;
-  }
-
-  .filter-box,
-  .apply-btn {
-    flex: none;
-  }
 }
 
 .filter-box {

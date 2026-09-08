@@ -53,8 +53,10 @@ export class ZoneTablePanelComponent implements OnChanges {
     this.buildComparisonChart();
   }
 
+  // Sorted descending by Share - highest-share zone first, matching the
+  // table and the comparison chart below it (both read off this same getter).
   get filteredZones(): ZoneRow[] {
-    return this.zones.filter((z) => this.selectedZoneKeys.has(z.key));
+    return this.zones.filter((z) => this.selectedZoneKeys.has(z.key)).sort((a, b) => b.sharePct - a.sharePct);
   }
 
   get allSelected(): boolean {

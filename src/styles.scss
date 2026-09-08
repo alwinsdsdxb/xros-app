@@ -5,23 +5,23 @@ body {
 }
 
 // The app's px-based layout was authored assuming an ~80% browser zoom
-// baseline - at real 100% zoom every panel reads oversized. This bakes that
-// baseline in so the UI matches on first load without the user manually
-// zooming out. Applied on `html` (not a wrapper transform) so it rescales
-// actual layout/viewport computation, keeping CDK overlays - which the CDK
-// appends to `<body>`, not inside `<app-root>` - aligned with the page.
+// baseline - at real 100% zoom every panel reads oversized. This used to be
+// `zoom: 0.8` on <html>, but CSS `zoom` desyncs getBoundingClientRect() from
+// the viewport/container rects Angular CDK Overlay compares it against -
+// a long-standing, unfixed upstream bug (github.com/angular/components/
+// issues/29424, #10924, open since 2018) that sent every mat-menu/mat-select/
+// mat-datepicker panel to the wrong spot on screen. `transform: scale()`
+// doesn't have that bug (browsers keep getBoundingClientRect() consistent
+// under ancestor transforms), so the 0.8 scale now lives on <app-root>
+// itself instead - see app.component.scss - paired with a custom
+// OverlayContainer (see core/services/scaled-overlay-container.ts) that
+// relocates CDK's overlay panels to render inside <app-root> too, so they
+// share that same transformed coordinate space instead of document.body's
+// untransformed one.
 //
-// Scoped to desktop widths only: CSS `zoom` on the root scales rendering
-// without changing the layout viewport, so on a phone it leaves the actual
-// screen with the whole page rendered at 80% size and a permanent dead
-// margin down the right/bottom edge instead of filling it. Mobile/tablet
-// layouts below are authored to their own real CSS-pixel breakpoints, so
-// they render correctly at normal (unzoomed) scale.
-@media (min-width: 900px) {
-  html {
-    zoom: 0.8;
-  }
-}
+// Mobile/tablet layouts are authored to their own real CSS-pixel
+// breakpoints and render correctly at normal (unscaled) size - see
+// app.component.scss for why this stays scoped to desktop widths.
 
 body {
   margin: 0;

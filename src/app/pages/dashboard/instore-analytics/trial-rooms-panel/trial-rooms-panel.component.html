@@ -3,6 +3,7 @@
     <span class="section-tag">TRIAL ROOMS</span>
     <span class="proxy-badge">Best-effort zone match</span>
   </div>
+  <div class="page-section-title">Trial Room Activity</div>
 
   <div class="zone-block" *ngFor="let z of proxy!.zones; last as isLast" [class.with-divider]="proxy!.status === 'multiple' && !isLast">
     <div class="zone-name" [class.zone-name-muted]="proxy!.status === 'matched'">{{ z.zoneName }}</div>

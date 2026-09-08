@@ -6,6 +6,7 @@ import * as Highcharts from 'highcharts';
 import { AuthService } from '../../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload } from '../../../core/services/kpi.service';
 import { WidgetService } from '../../../core/services/widget.service';
+import { FilterStateService, SharedFilterState } from '../../../core/services/filter-state.service';
 import { DashboardGroup, DashboardSummary, StoreListItem, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
 import { environment } from '../../../../environments/environment';
@@ -257,16 +258,41 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private authService: AuthService,
     private widgetService: WidgetService,
-    private kpiService: KpiService
+    private kpiService: KpiService,
+    private filterStateService: FilterStateService
   ) {
+    const shared = this.filterStateService.snapshot;
     this.filterForm = this.fb.group({
-      store: ['all'],
-      view: ['Month'],
-      date: [new Date()],
-      customRange: this.fb.group({ start: [null], end: [null] }),
-      operationalHours: [1]
+      store: [shared.store],
+      view: [shared.view],
+      date: [shared.date],
+      customRange: this.fb.group({ start: [shared.customRange.start], end: [shared.customRange.end] }),
+      operationalHours: [shared.operationalHours]
     });
     this.metricsSummaryRows = this.buildMetricsSummaryRows();
+  }
+
+  // See dashboard.component.ts's onSharedFilterState - same pattern, shared
+  // across every tab so Store/View/Date/Hours picked on one tab is what's
+  // already applied when you switch to another.
+  private onSharedFilterState(state: SharedFilterState): void {
+    if (FilterStateService.equal(state, this.currentSharedFilterState())) {
+      return;
+    }
+    this.filterForm.patchValue(
+      { store: state.store, view: state.view, date: state.date, operationalHours: state.operationalHours, customRange: state.customRange },
+      { emitEvent: false }
+    );
+    this.refetch();
+  }
+
+  private currentSharedFilterState(): SharedFilterState {
+    const { store, view, date, operationalHours, customRange } = this.filterForm.value;
+    return { store, view, date, operationalHours, customRange: customRange ?? { start: null, end: null } };
+  }
+
+  private publishFilterState(): void {
+    this.filterStateService.setState(this.currentSharedFilterState());
   }
 
   get customRangeGroup(): FormGroup {
@@ -288,6 +314,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   }
 
   ngOnInit(): void {
+    this.filterStateService.state$.subscribe((state) => this.onSharedFilterState(state));
     this.resolveWidget();
   }
 
@@ -298,6 +325,11 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   }
 
   apply(): void {
+    this.publishFilterState();
+    this.refetch();
+  }
+
+  private refetch(): void {
     this.fetch();
     // The calendar is its own independent month browser (like the main
     // Calendar tab's prev/today/next), but it still needs to pick up the
@@ -502,15 +534,24 @@ export class QueuePanelComponent implements OnInit, OnChanges {
 
   // Shared by fetch() (the filter-driven range) and fetchCalendarMonth() (an
   // independent month browser) - both just need "one QueueDayRow per day in
-  // [from, to]" from a dataFilter response.
+  // [from, to]" from a dataFilter response. Capped at today - a Month/Year
+  // view's `to` can land in the future (e.g. viewing the current month), and
+  // a future day has no real data yet, so it would otherwise show up as an
+  // all-zero row/cell instead of not existing at all.
   private rowsFromFilters(filters: KpiDataFilterResult[], from: Date, to: Date): QueueDayRow[] {
+    const today = this.stripTime(new Date());
+    const effectiveTo = to > today ? today : to;
+    if (from > effectiveTo) {
+      return [];
+    }
+
     const queueLengthByDate = this.metricByDate(filters, QUEUE_LENGTH_LABEL);
     const queueTimeByDate = this.metricByDate(filters, QUEUE_TIME_LABEL);
     const serviceTimeByDate = this.metricByDate(filters, SERVICE_TIME_LABEL);
     const queueCountByDate = this.metricByDate(filters, QUEUE_COUNT_LABEL);
 
     const rows: QueueDayRow[] = [];
-    for (const d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) {
+    for (const d = new Date(from); d <= effectiveTo; d.setDate(d.getDate() + 1)) {
       const key = this.formatDate(d);
       const queueTimeSec = queueTimeByDate.get(key) ?? 0;
       const serviceTimeSec = serviceTimeByDate.get(key) ?? 0;

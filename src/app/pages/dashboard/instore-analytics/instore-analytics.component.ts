@@ -5,6 +5,7 @@ import { MatDatepicker } from '@angular/material/datepicker';
 import { AuthService } from '../../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload } from '../../../core/services/kpi.service';
 import { WidgetService } from '../../../core/services/widget.service';
+import { FilterStateService, SharedFilterState } from '../../../core/services/filter-state.service';
 import { DashboardGroup, DashboardSummary, EventListItem, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
 import { CampaignEvent } from '../../../core/models/dashboard.model';
@@ -68,11 +69,6 @@ const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, h) => `${h.toString().padS
 export class InstoreAnalyticsComponent implements OnInit, OnChanges {
   @Input() dashboardId: string | null = null;
   @Input() dashboards: DashboardSummary[] = [];
-  // Initial/default value only - see dashboard.component.ts's
-  // appliedOperationalHours. This tab keeps its own Hours toggle (below) so
-  // it can still be changed independently, but it's re-synced to match
-  // whenever the main Dashboard tab's own Hours setting changes (ngOnChanges).
-  @Input() operationalHours = 1;
   @Output() dashboardChange = new EventEmitter<string>();
   readonly fixedDashboardId = environment.fixedDashboardId;
 
@@ -156,18 +152,43 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
     private fb: FormBuilder,
     private authService: AuthService,
     private widgetService: WidgetService,
-    private kpiService: KpiService
+    private kpiService: KpiService,
+    private filterStateService: FilterStateService
   ) {
+    const shared = this.filterStateService.snapshot;
     this.filterForm = this.fb.group({
-      store: ['all'],
-      view: ['Month'],
-      date: [new Date()],
-      operationalHours: [1]
+      store: [shared.store],
+      view: [shared.view],
+      date: [shared.date],
+      operationalHours: [shared.operationalHours]
     });
   }
 
+  // See dashboard.component.ts's onSharedFilterState - same pattern, shared
+  // across every tab so Store/View/Date/Hours picked on one tab is what's
+  // already applied when you switch to another.
+  private onSharedFilterState(state: SharedFilterState): void {
+    if (FilterStateService.equal(state, this.currentSharedFilterState())) {
+      return;
+    }
+    this.filterForm.patchValue(
+      { store: state.store, view: state.view, date: state.date, operationalHours: state.operationalHours },
+      { emitEvent: false }
+    );
+    this.fetch();
+  }
+
+  private currentSharedFilterState(): SharedFilterState {
+    const { store, view, date, operationalHours } = this.filterForm.value;
+    return { store, view, date, operationalHours, customRange: this.filterStateService.snapshot.customRange };
+  }
+
+  private publishFilterState(): void {
+    this.filterStateService.setState(this.currentSharedFilterState());
+  }
+
   ngOnInit(): void {
-    this.filterForm.patchValue({ operationalHours: this.operationalHours }, { emitEvent: false });
+    this.filterStateService.state$.subscribe((state) => this.onSharedFilterState(state));
     this.resolveWidgets();
   }
 
@@ -175,16 +196,10 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
     if (changes['dashboardId'] && !changes['dashboardId'].firstChange) {
       this.resolveWidgets();
     }
-    // Re-syncs this tab's own Hours toggle to match whenever the main
-    // Dashboard tab's Hours setting changes, so they stay in step - but the
-    // toggle here can still be changed independently in between.
-    if (changes['operationalHours'] && !changes['operationalHours'].firstChange) {
-      this.filterForm.patchValue({ operationalHours: this.operationalHours }, { emitEvent: false });
-      this.fetch();
-    }
   }
 
   apply(): void {
+    this.publishFilterState();
     this.fetch();
   }
 

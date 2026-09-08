@@ -10,25 +10,6 @@
   text-align: left;
 }
 
-.funnel-tag {
-  display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: var(--navy);
-  background: #e3eef6;
-  border-radius: 50px;
-  padding: 4px 12px;
-  margin-bottom: 10px;
-}
-
-.funnel-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ink-primary);
-  margin: 0 0 14px 0;
-}
-
 .funnel-stack {
   display: flex;
   flex-direction: column;
