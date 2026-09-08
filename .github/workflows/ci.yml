@@ -1,4 +1,4 @@
-name: XROS CI
+name: XROS CI/CD
 
 on:
   push:
@@ -28,3 +28,31 @@ jobs:
 
       - name: Build Angular application
         run: npm run build
+
+      - name: Prepare SSH
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Deploy to production
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "mkdir -p /var/www/xros-deploy"
+
+          scp -i ~/.ssh/deploy_key -r \
+            dist/app_v2/browser/. \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/xros-deploy/"
+
+          ssh -i ~/.ssh/deploy_key \
+            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
+            "set -e
+             BACKUP=/var/www/html_backup_\$(date +%Y%m%d_%H%M%S)
+             cp -a /var/www/html \"\$BACKUP\"
+             rm -rf /var/www/html/*
+             cp -a /var/www/xros-deploy/. /var/www/html/
+             rm -rf /var/www/xros-deploy/*"
