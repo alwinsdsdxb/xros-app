@@ -20,11 +20,13 @@
 
   <ng-container *ngIf="activeTab === 'customer-flow'">
     <p class="chart-caption">
-      <ng-container *ngIf="totalFlowCount > shownFlowCount">
-        Strongest {{ shownFlowCount }} of {{ totalFlowCount }} zone-to-zone flows, ranked by shared visitor volume. Arc width = volume.
-      </ng-container>
-      <ng-container *ngIf="totalFlowCount <= shownFlowCount">
-        Modelled flow based on zone traffic share. Arc width = cross-zone visitor volume.
+      <ng-container *ngIf="shownFlowCount">
+        All {{ totalFlowCount }} zone-to-zone flows, laid out relative to {{ flowAnchorZone
+        }}<ng-container *ngIf="flowAnchorIsFallback"> (highest-traffic zone - no entrance found)</ng-container> - a
+        zone may repeat across stages so every flow's direction stays correct<ng-container *ngIf="untieredFlowCount"
+          >, {{ untieredFlowCount }} flow{{ untieredFlowCount === 1 ? '' : 's' }} omitted - no path from
+          {{ flowAnchorZone }}</ng-container
+        >. Link width = volume.
       </ng-container>
     </p>
 
@@ -33,7 +35,8 @@
       [Highcharts]="Highcharts"
       [options]="chartOptions"
       [oneToOne]="true"
-      style="display: block; width: 100%; height: 380px"
+      style="display: block; width: 100%"
+      [style.height.px]="chartHeight"
     ></highcharts-chart>
     <ng-template #noFlowData>
       <div class="no-flow-data">No zone-to-zone flow data for this date yet.</div>
@@ -70,7 +73,6 @@
         <span>Traffic</span>
         <span>Unique Footfall</span>
         <span>Share %</span>
-        <span>Capture %</span>
         <span>Dwell</span>
       </div>
       <div class="matrix-row" *ngFor="let r of matrixRows">
@@ -86,10 +88,6 @@
         </span>
         <span class="metric-cell">
           <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.sharePct }}</span>
-          <span class="metric-unit">%</span>
-        </span>
-        <span class="metric-cell">
-          <span class="metric-pill" [style.border-color]="r.color" [style.color]="r.color">{{ r.capturePct }}</span>
           <span class="metric-unit">%</span>
         </span>
         <span class="metric-cell">

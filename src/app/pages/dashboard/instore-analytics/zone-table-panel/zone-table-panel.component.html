@@ -50,7 +50,6 @@
       <span>Visitors</span>
       <span>Attention</span>
       <span>Avg Dwell</span>
-      <span>Visitor Traffic</span>
       <span>Share</span>
     </div>
     <div class="zone-table-row" *ngFor="let z of filteredZones">
@@ -62,7 +61,6 @@
       <span>{{ z.visitors | number }}</span>
       <span>{{ z.attentionVisitors | number }}</span>
       <span>{{ formatDuration(z.avgResidenceTime) }}</span>
-      <span>{{ z.visitorTraffic | number }}</span>
       <span class="share-cell">
         <span class="row-dot" [style.background]="colorForZone(z.key)"></span>
         {{ z.sharePct }}%
