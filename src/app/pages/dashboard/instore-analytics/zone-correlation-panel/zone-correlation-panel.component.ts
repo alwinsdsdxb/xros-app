@@ -78,10 +78,6 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
   shownEntranceFlowCount = 0;
   totalEntranceFlowCount = 0;
   droppedSameTierCount = 0;
-  private readonly entranceColor = '#00b8d9';
-  // Same teal as entranceColor, separate field since it marks a different
-  // concept (this run's computed highest-traffic zone, not an entrance).
-  private readonly flowAnchorColor = '#00b8d9';
 
   get matrixRows(): MetricMatrixRow[] {
     return this.zones.map((z, index) => ({
@@ -260,9 +256,6 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
     let zoneColorIndex = 0;
     const nodes = nodeIds.map((id) => {
       const { name, tier } = parseId(id);
-      if (tier === 0) {
-        return { id, name, column: tier, color: this.flowAnchorColor };
-      }
       if (!colorByName.has(name)) {
         colorByName.set(name, this.zonePalette[zoneColorIndex % this.zonePalette.length]);
         zoneColorIndex++;
@@ -559,9 +552,6 @@ export class ZoneCorrelationPanelComponent implements OnChanges {
     );
     let zoneColorIndex = 0;
     const nodes = nodeIds.map((id) => {
-      if (this.isEntrance(id)) {
-        return { id, column: tiers.get(id)!, color: this.entranceColor };
-      }
       const color = this.zonePalette[zoneColorIndex % this.zonePalette.length];
       zoneColorIndex++;
       return { id, column: tiers.get(id)!, color };
