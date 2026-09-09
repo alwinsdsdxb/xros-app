@@ -33,12 +33,9 @@ export class ShellComponent implements OnInit, OnDestroy {
     { label: 'XR ClimateIQ™', route: '/climate-iq' }
   ];
 
-  readonly adminNavA: NavItem[] = [
+  readonly adminNav: NavItem[] = [
     { label: 'My Roster', route: '/my-roster' },
-    { label: 'XR Workforce Intelligence™', route: '/workforce-intelligence' }
-  ];
-
-  readonly adminNavB: NavItem[] = [
+    { label: 'XR Workforce Intelligence™', route: '/workforce-intelligence' },
     { label: 'Employees', route: '/employees' },
     { label: 'Settings', route: '/settings' }
   ];

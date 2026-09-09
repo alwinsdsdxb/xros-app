@@ -41,18 +41,7 @@
       <div class="section-label">ADMINISTRATION</div>
       <a
         mat-list-item
-        *ngFor="let item of adminNavA"
-        [routerLink]="item.route"
-        routerLinkActive="active-link"
-        class="nav-chip"
-      >
-        <span matListItemTitle>{{ item.label }}</span>
-      </a>
-
-      <div class="section-label">ADMINISTRATION</div>
-      <a
-        mat-list-item
-        *ngFor="let item of adminNavB"
+        *ngFor="let item of adminNav"
         [routerLink]="item.route"
         routerLinkActive="active-link"
         class="nav-chip"

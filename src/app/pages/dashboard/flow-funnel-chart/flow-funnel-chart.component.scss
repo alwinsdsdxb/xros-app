@@ -1,5 +1,12 @@
+// display:flex column - this card stretches to match the KPI column's
+// height (see dashboard.component.scss's .kpi-funnel-row), which is usually
+// taller than the funnel's own natural content height. Without this, the
+// header+stack (both plain block-flow content) just pack to the top,
+// leaving the leftover stretched height as dead space below the last stage.
 .mat-mdc-card.funnel-card,
 .funnel-card {
+  display: flex;
+  flex-direction: column;
   border-radius: 24px !important;
   border: 1px solid #d8e3ea !important;
   box-shadow: 0 0 4px 0 rgba(38, 50, 56, 0.14) !important;
@@ -10,22 +17,31 @@
   text-align: left;
 }
 
+// flex:1 claims the height left over after .funnel-header, which each
+// .funnel-stage below then shares equally (flex:1 1 0 each) - together this
+// is what stretches the funnel to actually fill the container instead of
+// leaving the extra height as a gap (or, previously, as dead centered space).
 .funnel-stack {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   width: 100%;
 }
 
-// The shape and its text content are separate layers within the same row:
-// the shape is an absolutely-positioned background clipped to a trapezoid,
-// while the content sits in normal flow (padding, not inset:0) so its
-// natural height - not a fixed min-height - is what determines the row's
-// height, letting a long label wrap onto a second line on a narrow stage
-// instead of overflowing past the trapezoid's edges.
+// flex:1 1 0 - each stage grows to claim an equal share of .funnel-stack's
+// available height, so the trapezoids actually get taller on a taller
+// container instead of staying at their own fixed content height. The shape
+// and its text content are separate layers within the same row: the shape
+// is an absolutely-positioned background clipped to a trapezoid, while the
+// content sits in normal flow, centered via .funnel-stage-content's own
+// flex centering, so it stays vertically centered within whatever height
+// this row grows to.
 .funnel-stage {
   position: relative;
+  flex: 1 1 0;
+  min-height: 64px;
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
@@ -41,8 +57,14 @@
   clip-path: polygon(15% 0, 85% 0, 97% 100%, 3% 100%);
 }
 
+// position:absolute + inset:0 (not normal flow) - now that .funnel-stage's
+// height comes from its flex:1 1 0 share of the container instead of this
+// content's own natural height, this needs to fill that full height itself
+// so its centering below actually centers within the whole taller row
+// rather than sitting at the top with blank trapezoid below it.
 .funnel-stage-content {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
   display: flex;
   flex-direction: column;
