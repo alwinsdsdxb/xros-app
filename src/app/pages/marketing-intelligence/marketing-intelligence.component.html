@@ -1,0 +1,929 @@
+<div class="mi-page">
+  <div class="page-tab-bar">
+    <div class="page-tabs">
+      <button
+        *ngFor="let tab of tabs"
+        type="button"
+        class="page-tab"
+        [class.active]="activeTab === tab.value"
+        (click)="selectTab(tab.value)"
+      >
+        {{ tab.label }}
+      </button>
+    </div>
+    <button type="button" class="setup-btn">Setup</button>
+  </div>
+
+  <div class="loading-row" *ngIf="isLoading">
+    <mat-progress-spinner mode="indeterminate" diameter="26"></mat-progress-spinner>
+    <span>Loading campaign data...</span>
+  </div>
+  <div class="error-row" *ngIf="errorMessage && !isLoading">{{ errorMessage }}</div>
+
+  <ng-container *ngIf="activeTab === 'overview'">
+    <div class="stat-grid">
+      <div class="xros-card stat-card">
+        <div class="stat-card-header">
+          <span class="stat-icon-badge"><mat-icon>campaign</mat-icon></span>
+          <span class="stat-card-label">Campaigns</span>
+        </div>
+        <div class="stat-card-value">{{ campaignsCount }}</div>
+      </div>
+
+      <div class="xros-card stat-card">
+        <div class="stat-card-header">
+          <span class="stat-icon-badge"><mat-icon>schedule</mat-icon></span>
+          <span class="stat-card-label">Active Now</span>
+        </div>
+        <div class="stat-card-value">{{ activeNow }}</div>
+      </div>
+
+      <div class="xros-card stat-card">
+        <div class="stat-card-header">
+          <span class="stat-icon-badge"><mat-icon>account_balance_wallet</mat-icon></span>
+          <span class="stat-card-label">Planned Budget</span>
+        </div>
+        <div class="stat-card-value">{{ formatCurrency(plannedBudget) }}</div>
+      </div>
+
+      <div class="xros-card stat-card">
+        <div class="stat-card-header">
+          <span class="stat-icon-badge"><mat-icon>trending_up</mat-icon></span>
+          <span class="stat-card-label">Best Uplift</span>
+        </div>
+        <div class="stat-card-value">{{ bestUpliftPct !== null ? bestUpliftPct + '%' : '—' }}</div>
+      </div>
+    </div>
+
+    <div class="two-col-row">
+      <div class="xros-card featured-card" *ngIf="topCampaign as tc">
+        <div class="panel-header">
+          <span class="section-tag">FEATURED</span>
+          <button type="button" class="outline-btn" (click)="openReportFor(tc.id)">Open Report</button>
+        </div>
+        <div class="page-section-title">Top performing campaign</div>
+
+        <div class="top-campaign-tile">
+          <span class="channel-chip">{{ tc.channels.join(' + ') }}</span>
+          <div class="top-campaign-name">{{ tc.name }}</div>
+          <div class="top-campaign-range">{{ tc.from }} to {{ tc.to }}</div>
+
+          <div class="top-campaign-stats" *ngIf="tc.performance as p">
+            <div class="tc-stat">
+              <span class="tc-label">Uplift</span>
+              <span class="tc-value">{{ p.upliftPct }}%</span>
+            </div>
+            <div class="tc-stat">
+              <span class="tc-label">Traffic</span>
+              <span class="tc-value">{{ p.traffic | number }}</span>
+            </div>
+            <div class="tc-stat">
+              <span class="tc-label">Spend</span>
+              <span class="tc-value">{{ formatCurrency(p.spend) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="xros-card recent-card">
+        <div class="panel-header">
+          <span class="section-tag">RECENT</span>
+          <button type="button" class="outline-btn">Open Analytics</button>
+        </div>
+        <div class="page-section-title">Campaign list</div>
+
+        <div class="recent-list">
+          <div class="recent-row" *ngFor="let c of recentCampaigns; trackBy: trackByCampaignId">
+            <div class="recent-info">
+              <div class="recent-name">{{ c.name }}</div>
+              <div class="recent-range">{{ c.from }} to {{ c.to }}</div>
+            </div>
+            <span
+              class="status-pill"
+              [class.status-completed]="c.status === 'Completed'"
+              [class.status-active]="c.status === 'Active'"
+              [class.status-planned]="c.status === 'Planned'"
+              >{{ c.status }}</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="xros-card catalogue-card">
+      <span class="section-tag">CATALOGUE</span>
+      <div class="page-section-title">Current campaigns</div>
+      <p class="panel-subtitle">Use filters and paging so the catalogue stays clean even when the campaign list grows large.</p>
+
+      <div class="catalogue-filter-row">
+        <div class="filter-box">
+          <span class="filter-caption">Search campaigns</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('campaigns')">
+            <mat-icon class="trigger-icon">search</mat-icon>
+            <span class="trigger-text">
+              <span class="trigger-main">{{ campaignFilterLabel }}</span>
+              <span class="trigger-sub">Search and check one or more campaigns</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+
+          <div class="dropdown-panel" *ngIf="openDropdown === 'campaigns'">
+            <input
+              class="dropdown-search"
+              type="text"
+              placeholder="Search campaigns"
+              [(ngModel)]="campaignSearchQuery"
+            />
+            <div class="dropdown-list">
+              <label class="dropdown-option" *ngFor="let name of filteredCampaignNameOptions">
+                <input type="checkbox" [checked]="selectedCampaignNames.has(name)" (change)="toggleCampaignName(name)" />
+                <span>{{ name }}</span>
+              </label>
+              <div class="dropdown-empty" *ngIf="!filteredCampaignNameOptions.length">No campaigns match.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-box">
+          <span class="filter-caption">Channel</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('channel')">
+            <mat-icon class="trigger-icon">search</mat-icon>
+            <span class="trigger-text">
+              <span class="trigger-main">{{ channelFilterLabel }}</span>
+              <span class="trigger-sub">Search and check one or more channels</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+
+          <div class="dropdown-panel" *ngIf="openDropdown === 'channel'">
+            <input
+              class="dropdown-search"
+              type="text"
+              placeholder="Search channels"
+              [(ngModel)]="channelSearchQuery"
+            />
+            <div class="dropdown-list">
+              <label class="dropdown-option" *ngFor="let ch of filteredChannelOptions">
+                <input type="checkbox" [checked]="selectedChannels.has(ch)" (change)="toggleChannel(ch)" />
+                <span>{{ ch }}</span>
+              </label>
+              <div class="dropdown-empty" *ngIf="!filteredChannelOptions.length">No channels match.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-box">
+          <span class="filter-caption">Date range</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('date')">
+            <mat-icon class="trigger-icon">date_range</mat-icon>
+            <span class="trigger-text">
+              <span class="trigger-main">{{ dateRangeLabel }}</span>
+              <span class="trigger-sub">Choose a start and end date from one calendar</span>
+            </span>
+          </button>
+
+          <div class="dropdown-panel date-panel" *ngIf="openDropdown === 'date'">
+            <label class="date-input-row">
+              Start
+              <input type="date" [(ngModel)]="dateStartDraft" />
+            </label>
+            <label class="date-input-row">
+              End
+              <input type="date" [(ngModel)]="dateEndDraft" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="catalogue-toolbar">
+        <span class="showing-count">Showing {{ filteredCampaigns.length }} of {{ campaigns.length }} campaigns</span>
+        <div class="toolbar-actions">
+          <button type="button" class="outline-btn" (click)="clearFilters()">Clear</button>
+          <button type="button" class="apply-btn" (click)="applyFilters()">Apply Filters</button>
+        </div>
+      </div>
+
+      <div class="catalogue-table" *ngIf="filteredCampaigns.length; else emptyCatalogue">
+        <div class="catalogue-row catalogue-header">
+          <span>Campaign</span>
+          <span>Channel</span>
+          <span>Dates</span>
+          <span>Budget</span>
+          <span>Status</span>
+          <span></span>
+        </div>
+        <div class="catalogue-row" *ngFor="let c of filteredCampaigns; trackBy: trackByCampaignId">
+          <span class="cell-name">{{ c.name }}</span>
+          <span class="cell-channel">{{ c.channels.join(' + ') }}</span>
+          <span class="cell-dates">{{ c.from }} to {{ c.to }}</span>
+          <span class="cell-budget">{{ formatCurrency(c.budget) }}</span>
+          <span
+            class="status-pill"
+            [class.status-completed]="c.status === 'Completed'"
+            [class.status-active]="c.status === 'Active'"
+            [class.status-planned]="c.status === 'Planned'"
+            >{{ c.status }}</span
+          >
+          <span class="cell-action"><button type="button" class="link-btn" (click)="openReportFor(c.id)">Open report</button></span>
+        </div>
+      </div>
+      <ng-template #emptyCatalogue>
+        <div class="catalogue-empty">No campaigns match the current filters.</div>
+      </ng-template>
+    </div>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab === 'reports'">
+    <div class="xros-card report-filter-card">
+      <span class="section-tag">REPORTS</span>
+      <div class="page-section-title">Campaign effectiveness reports</div>
+      <p class="panel-subtitle">Use filters and a single campaign selector so reporting stays usable even when the campaign list becomes long.</p>
+
+      <div class="report-search-box">
+        <mat-icon class="trigger-icon">search</mat-icon>
+        <input type="text" class="report-search-input" placeholder="Name, channel, note, date" [(ngModel)]="reportSearchQuery" />
+      </div>
+
+      <div class="catalogue-filter-row">
+        <div class="filter-box">
+          <span class="filter-caption">Channel</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('reportChannel')">
+            <span class="trigger-text">
+              <span class="trigger-main">{{ reportChannelFilter }}</span>
+              <span class="trigger-sub">Show every channel</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'reportChannel'">
+            <div class="dropdown-list">
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="reportChannel"
+                  [checked]="reportChannelFilter === 'All channels'"
+                  (change)="reportChannelFilter = 'All channels'; openDropdown = null"
+                />
+                <span>All channels</span>
+              </label>
+              <label class="dropdown-option" *ngFor="let ch of channelOptions">
+                <input
+                  type="radio"
+                  name="reportChannel"
+                  [checked]="reportChannelFilter === ch"
+                  (change)="reportChannelFilter = ch; openDropdown = null"
+                />
+                <span>{{ ch }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-box">
+          <span class="filter-caption">Status</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('reportStatus')">
+            <span class="trigger-text">
+              <span class="trigger-main">{{ reportStatusFilter }}</span>
+              <span class="trigger-sub">Show every status</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'reportStatus'">
+            <div class="dropdown-list">
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="reportStatus"
+                  [checked]="reportStatusFilter === 'All statuses'"
+                  (change)="reportStatusFilter = 'All statuses'; openDropdown = null"
+                />
+                <span>All statuses</span>
+              </label>
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="reportStatus"
+                  [checked]="reportStatusFilter === 'Completed'"
+                  (change)="reportStatusFilter = 'Completed'; openDropdown = null"
+                />
+                <span>Completed</span>
+              </label>
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="reportStatus"
+                  [checked]="reportStatusFilter === 'Active'"
+                  (change)="reportStatusFilter = 'Active'; openDropdown = null"
+                />
+                <span>Active</span>
+              </label>
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="reportStatus"
+                  [checked]="reportStatusFilter === 'Planned'"
+                  (change)="reportStatusFilter = 'Planned'; openDropdown = null"
+                />
+                <span>Planned</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-box">
+          <span class="filter-caption">Open campaign</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('openCampaign')">
+            <mat-icon class="trigger-icon">description</mat-icon>
+            <ng-container *ngIf="openCampaignDraft as oc; else noDraft">
+              <span class="trigger-text">
+                <span class="trigger-main">{{ oc.name }}</span>
+                <span class="trigger-sub">{{ oc.channels.join(' + ') }} • {{ oc.from }}</span>
+              </span>
+            </ng-container>
+            <ng-template #noDraft>
+              <span class="trigger-text"><span class="trigger-main">Select a campaign</span></span>
+            </ng-template>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'openCampaign'">
+            <div class="dropdown-list">
+              <label class="dropdown-option" *ngFor="let c of reportFilteredCampaigns">
+                <input type="radio" name="openCampaign" [checked]="openCampaignDraftId === c.id" (change)="selectOpenCampaignDraft(c.id)" />
+                <span>{{ c.name }}</span>
+              </label>
+              <div class="dropdown-empty" *ngIf="!reportFilteredCampaigns.length">No campaigns match.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="catalogue-toolbar">
+        <span class="showing-count"
+          >Showing {{ reportFilteredCampaigns.length }} campaign option{{ reportFilteredCampaigns.length === 1 ? '' : 's' }}</span
+        >
+        <div class="toolbar-actions">
+          <button type="button" class="outline-btn" (click)="clearReportFilters()">Clear</button>
+          <button type="button" class="apply-btn" (click)="openReport()">Open Report</button>
+        </div>
+      </div>
+    </div>
+
+    <ng-container *ngIf="selectedReportCampaign as camp">
+      <ng-container *ngIf="camp.report as report; else noReportData">
+        <div class="xros-card report-header-card">
+          <div class="report-header-top">
+            <div>
+              <span class="channel-chip">{{ camp.channels.join(' • ') | uppercase }}</span>
+              <div class="report-title-row">
+                <h2 class="report-title">{{ camp.name }}</h2>
+                <span
+                  class="status-pill"
+                  [class.status-completed]="camp.status === 'Completed'"
+                  [class.status-active]="camp.status === 'Active'"
+                  [class.status-planned]="camp.status === 'Planned'"
+                  >{{ camp.status }}</span
+                >
+              </div>
+              <div class="report-dates">{{ camp.from }} to {{ camp.to }} • {{ report.description }}</div>
+              <div class="report-scope-note">{{ report.scopeNote }}</div>
+            </div>
+            <button type="button" class="outline-btn report-footfall-btn">Open Footfall Month</button>
+          </div>
+        </div>
+
+        <div class="xros-card section-card">
+          <span class="section-tag">PERFORMANCE</span>
+          <div class="page-section-title">Campaign metrics</div>
+          <div class="metric-tile-grid">
+            <div class="metric-tile" *ngFor="let m of report.metrics">
+              <div class="metric-tile-header">
+                <span class="metric-label">{{ m.label }}</span>
+                <mat-icon class="metric-icon">{{ m.icon }}</mat-icon>
+              </div>
+              <div class="metric-value" [class.is-empty]="m.value === '—'">{{ m.value }}</div>
+              <div class="metric-sub">{{ m.sub }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="xros-card section-card">
+          <div class="rollout-header">
+            <div>
+              <span class="section-tag">BRAND ROLLOUT</span>
+              <div class="page-section-title">Store-wise campaign impact</div>
+            </div>
+            <p class="rollout-note">{{ report.storeImpactNote }}</p>
+          </div>
+
+          <div class="metric-tile-grid">
+            <div class="metric-tile">
+              <div class="metric-tile-header">
+                <span class="metric-label">Stores</span>
+                <mat-icon class="metric-icon">store</mat-icon>
+              </div>
+              <div class="metric-value">{{ report.storesCount }}</div>
+              <div class="metric-sub">Participating stores</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-tile-header">
+                <span class="metric-label">Brand Traffic</span>
+                <mat-icon class="metric-icon">directions_walk</mat-icon>
+              </div>
+              <div class="metric-value">{{ report.brandTraffic | number }}</div>
+              <div class="metric-sub">Combined campaign-period visitors</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-tile-header">
+                <span class="metric-label">Brand Uplift</span>
+                <mat-icon class="metric-icon">trending_up</mat-icon>
+              </div>
+              <div class="metric-value">{{ report.brandUpliftPct }}%</div>
+              <div class="metric-sub">Incremental visitors across stores</div>
+            </div>
+            <div class="metric-tile">
+              <div class="metric-tile-header">
+                <span class="metric-label">Brand Spend</span>
+                <mat-icon class="metric-icon">payments</mat-icon>
+              </div>
+              <div class="metric-value">{{ formatCurrency(report.brandSpend) }}</div>
+              <div class="metric-sub">Best store: {{ report.bestStoreName }}</div>
+            </div>
+          </div>
+
+          <div class="store-table">
+            <div class="store-row store-header">
+              <span>Store</span>
+              <span>Status</span>
+              <span>Traffic</span>
+              <span>Unique</span>
+              <span>Baseline Avg</span>
+              <span>Uplift</span>
+              <span>Incremental</span>
+              <span>Spend</span>
+              <span>Cost / Unique</span>
+            </div>
+            <div class="store-row" *ngFor="let s of report.stores">
+              <span class="cell-name">
+                {{ s.store }}
+                <span class="cell-note" *ngIf="s.note">{{ s.note }}</span>
+              </span>
+              <span
+                ><span
+                  class="status-pill"
+                  [class.status-completed]="s.status === 'Completed'"
+                  [class.status-planned]="s.status === 'Planned'"
+                  >{{ s.status }}</span
+                ></span
+              >
+              <span>{{ s.traffic | number }}</span>
+              <span>{{ s.unique | number }}</span>
+              <span>{{ s.baselineAvg | number }}</span>
+              <span>{{ s.upliftPct }}%</span>
+              <span>{{ s.incremental | number }}</span>
+              <span>{{ formatCurrency(s.spend) }}</span>
+              <span>{{ formatCurrency(s.costPerUnique) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col-row">
+          <div class="xros-card section-card">
+            <div class="panel-header">
+              <span class="section-tag">AUDIENCE</span>
+              <span class="status-pill status-completed">{{ audienceSkewLabel }}</span>
+            </div>
+            <div class="page-section-title">Observed audience mix</div>
+
+            <div class="audience-legend">
+              <span class="audience-legend-item"><span class="dot" style="background: #2f6fa7"></span>Male {{ report.malePct }}%</span>
+              <span class="audience-legend-item"
+                ><span class="dot" style="background: #e3a73c"></span>Female {{ report.femalePct }}%</span
+              >
+              <span class="audience-legend-item">Lead age {{ report.leadAgeRange }}</span>
+            </div>
+
+            <div class="audience-bars">
+              <div class="audience-bar-row" *ngFor="let b of report.audienceBars">
+                <span class="audience-bar-label">{{ b.label | uppercase }}</span>
+                <div class="audience-bar-track">
+                  <div class="audience-bar-fill" [style.width.%]="audienceBarPct(b.value)" [style.background]="b.color"></div>
+                </div>
+                <span class="audience-bar-value">{{ b.value | number }}</span>
+              </div>
+            </div>
+            <p class="panel-subtitle audience-note">{{ report.audienceNote }}</p>
+          </div>
+
+          <div class="xros-card section-card">
+            <div class="panel-header">
+              <span class="section-tag">BENCHMARK</span>
+              <span class="status-pill status-planned">Rank {{ report.benchmarkRankLabel }}</span>
+            </div>
+            <div class="page-section-title">How it compares</div>
+
+            <div class="plain-stat-row">
+              <div class="plain-stat" *ngFor="let m of report.benchmarkStats">
+                <span class="plain-stat-label">{{ m.label }}</span>
+                <span class="plain-stat-value" [class.is-empty]="m.value === '—'">{{ m.value }}</span>
+                <span class="plain-stat-sub">{{ m.sub }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="two-col-row">
+          <div class="xros-card section-card">
+            <span class="section-tag">ATTRIBUTION</span>
+            <div class="page-section-title">Traffic leaders</div>
+            <div class="plain-stat-row">
+              <div class="plain-stat" *ngFor="let m of report.attribution">
+                <span class="plain-stat-label">{{ m.label }}</span>
+                <span class="plain-stat-value" [class.is-empty]="m.value === '—'">{{ m.value }}</span>
+                <span class="plain-stat-sub">{{ m.sub }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="xros-card section-card">
+            <div class="panel-header">
+              <span class="section-tag">API SIGNALS</span>
+              <span class="status-pill status-planned">Unavailable</span>
+            </div>
+            <div class="page-section-title">Brand behavior signals</div>
+            <p class="info-note">{{ report.apiSignalsNote }}</p>
+          </div>
+        </div>
+
+        <div class="xros-card section-card">
+          <div class="panel-header">
+            <span class="section-tag">STAY LENGTH</span>
+            <span class="status-pill status-planned">Unavailable</span>
+          </div>
+          <div class="page-section-title">Dwell signal</div>
+          <p class="info-note">{{ report.dwellNote }}</p>
+        </div>
+
+        <div class="two-col-row">
+          <div class="xros-card section-card">
+            <span class="section-tag">TREND</span>
+            <div class="page-section-title">Daily traffic, unique visitors, and spend</div>
+            <highcharts-chart
+              [Highcharts]="Highcharts"
+              [options]="trendChartOptions"
+              [oneToOne]="true"
+              style="display: block; width: 100%; height: 320px"
+            ></highcharts-chart>
+          </div>
+
+          <div class="xros-card section-card">
+            <div class="panel-header">
+              <span class="section-tag">HOURS</span>
+              <span class="status-pill status-completed" *ngIf="peakHourLabel">{{ peakHourLabel }}</span>
+            </div>
+            <div class="page-section-title">Best-performing hours</div>
+            <highcharts-chart
+              [Highcharts]="Highcharts"
+              [options]="hoursChartOptions"
+              [oneToOne]="true"
+              style="display: block; width: 100%; height: 320px"
+            ></highcharts-chart>
+          </div>
+        </div>
+
+        <div class="xros-card" *ngIf="report.notes">
+          <div class="page-section-title">Campaign Notes</div>
+          <p class="panel-subtitle campaign-notes-text">{{ report.notes }}</p>
+        </div>
+
+        <div class="xros-card section-card">
+          <span class="section-tag">DAILY DATA</span>
+          <div class="page-section-title">Budget, traffic, and unique visitors by day</div>
+          <p class="panel-subtitle">Traffic rows open the real footfall day detail for that date.</p>
+          <div class="info-note info-note-bar">
+            Daily budgets are locked for review. Open Edit Daily Data only when you want to update planned or actual spend.
+          </div>
+
+          <div class="daily-table">
+            <div class="daily-row daily-header">
+              <span>Date</span>
+              <span>Planned Budget</span>
+              <span>Actual Spend</span>
+              <span>Traffic</span>
+              <span>Unique Visitors</span>
+            </div>
+            <div class="daily-row" [class.is-best-day]="d.isBestDay" *ngFor="let d of report.dailyData">
+              <span class="cell-name">
+                {{ d.date }}
+                <span class="best-day-pill" *ngIf="d.isBestDay">Best day</span>
+              </span>
+              <span>{{ formatCurrency(d.plannedBudget) }}</span>
+              <span>{{ formatCurrency(d.actualSpend) }}</span>
+              <span class="cell-strong">{{ d.traffic | number }}</span>
+              <span>{{ d.uniqueVisitors | number }}</span>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+
+      <ng-template #noReportData>
+        <div class="xros-card section-card">
+          <div class="catalogue-empty">
+            No performance report is available yet for "{{ camp.name }}". Per-campaign reporting (uplift, traffic, spend) isn't provided by
+            the campaign API yet.
+          </div>
+        </div>
+      </ng-template>
+    </ng-container>
+  </ng-container>
+
+  <ng-container *ngIf="activeTab === 'analytics'">
+    <div class="xros-card section-card">
+      <span class="section-tag">ANALYTICS</span>
+      <div class="page-section-title">Aggregate marketing analytics</div>
+      <p class="panel-subtitle">Roll-up totals across every campaign in the catalogue, computed live from the numbers below.</p>
+
+      <div class="stat-grid">
+        <div class="xros-card stat-card">
+          <div class="stat-card-header">
+            <span class="stat-icon-badge"><mat-icon>payments</mat-icon></span>
+            <span class="stat-card-label">Actual Spend</span>
+          </div>
+          <div class="stat-card-value">{{ formatCurrency(totalActualSpend) }}</div>
+        </div>
+        <div class="xros-card stat-card">
+          <div class="stat-card-header">
+            <span class="stat-icon-badge"><mat-icon>directions_walk</mat-icon></span>
+            <span class="stat-card-label">Total Traffic</span>
+          </div>
+          <div class="stat-card-value">{{ totalTraffic | number }}</div>
+        </div>
+        <div class="xros-card stat-card">
+          <div class="stat-card-header">
+            <span class="stat-icon-badge"><mat-icon>trending_up</mat-icon></span>
+            <span class="stat-card-label">Avg Uplift</span>
+          </div>
+          <div class="stat-card-value">{{ avgUpliftPct }}%</div>
+        </div>
+        <div class="xros-card stat-card">
+          <div class="stat-card-header">
+            <span class="stat-icon-badge"><mat-icon>sell</mat-icon></span>
+            <span class="stat-card-label">Avg Cost / Visitor</span>
+          </div>
+          <div class="stat-card-value">{{ formatCurrency(avgCostPerVisitor) }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="xros-card section-card">
+      <div class="rollout-header">
+        <div>
+          <span class="section-tag">COMPARE</span>
+          <div class="page-section-title">Compare 2-3 campaigns</div>
+        </div>
+        <p class="rollout-note">Pick 2-3 campaigns. Each metric gets its own chart so the comparison is quick to scan even when campaigns differ a lot.</p>
+      </div>
+
+      <div class="catalogue-filter-row">
+        <div class="filter-box compare-picker">
+          <span class="filter-caption">Campaigns</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('compareCampaigns')">
+            <mat-icon class="trigger-icon">fact_check</mat-icon>
+            <span class="trigger-text">
+              <span class="trigger-main">{{ compareDraftCount }} campaign{{ compareDraftCount === 1 ? '' : 's' }} selected</span>
+              <span class="trigger-sub">Search and check up to 3 campaigns</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'compareCampaigns'">
+            <input class="dropdown-search" type="text" placeholder="Search campaigns" [(ngModel)]="compareSearchQuery" />
+            <div class="dropdown-list">
+              <label
+                class="dropdown-option"
+                *ngFor="let c of compareSearchOptions"
+                [class.dropdown-option-disabled]="!compareDraftIds.has(c.id) && compareDraftCount >= 3"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="compareDraftIds.has(c.id)"
+                  [disabled]="!compareDraftIds.has(c.id) && compareDraftCount >= 3"
+                  (change)="toggleCompareDraft(c.id)"
+                />
+                <span>{{ c.name }}</span>
+              </label>
+              <div class="dropdown-empty" *ngIf="!compareSearchOptions.length">No campaigns match.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="catalogue-toolbar">
+        <span class="showing-count">{{ compareDraftCount }} of 3 selected</span>
+        <div class="toolbar-actions">
+          <button type="button" class="apply-btn" [disabled]="compareDraftCount < 2" (click)="applyCompare()">Compare Selected</button>
+        </div>
+      </div>
+
+      <div class="compare-card-row" *ngIf="compareSelectedCampaigns.length">
+        <div class="compare-card" *ngFor="let c of compareSelectedCampaigns" [style.border-top-color]="colorForCampaign(c.id)">
+          <span class="channel-chip">{{ c.channels.join(' + ') | uppercase }}</span>
+          <div class="compare-card-name">{{ c.name }}</div>
+          <div class="compare-card-range">{{ c.from }} to {{ c.to }}</div>
+          <div class="compare-card-stats">
+            <div class="compare-stat">
+              <span class="compare-stat-label">Traffic</span>
+              <span class="compare-stat-value">{{ trafficOf(c) | number }}</span>
+            </div>
+            <div class="compare-stat">
+              <span class="compare-stat-label">Spend</span>
+              <span class="compare-stat-value">{{ formatCurrency(spendOf(c)) }}</span>
+            </div>
+            <div class="compare-stat">
+              <span class="compare-stat-label">Uplift</span>
+              <span class="compare-stat-value">{{ upliftOf(c) }}%</span>
+            </div>
+            <div class="compare-stat">
+              <span class="compare-stat-label">Cost / Visitor</span>
+              <span class="compare-stat-value">{{ formatCurrency(costPerVisitor(c)) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="compare-chart-grid" *ngIf="compareSelectedCampaigns.length">
+        <div class="compare-chart-tile">
+          <div class="compare-chart-title">Traffic</div>
+          <highcharts-chart
+            [Highcharts]="Highcharts"
+            [options]="trafficCompareChart"
+            [oneToOne]="true"
+            style="display: block; width: 100%; height: 220px"
+          ></highcharts-chart>
+        </div>
+        <div class="compare-chart-tile">
+          <div class="compare-chart-title">AED Spend</div>
+          <highcharts-chart
+            [Highcharts]="Highcharts"
+            [options]="spendCompareChart"
+            [oneToOne]="true"
+            style="display: block; width: 100%; height: 220px"
+          ></highcharts-chart>
+        </div>
+        <div class="compare-chart-tile">
+          <div class="compare-chart-title">Uplift %</div>
+          <highcharts-chart
+            [Highcharts]="Highcharts"
+            [options]="upliftCompareChart"
+            [oneToOne]="true"
+            style="display: block; width: 100%; height: 220px"
+          ></highcharts-chart>
+        </div>
+        <div class="compare-chart-tile">
+          <div class="compare-chart-title">AED Cost / Visitor</div>
+          <highcharts-chart
+            [Highcharts]="Highcharts"
+            [options]="costCompareChart"
+            [oneToOne]="true"
+            style="display: block; width: 100%; height: 220px"
+          ></highcharts-chart>
+        </div>
+      </div>
+    </div>
+
+    <div class="xros-card section-card">
+      <div class="rollout-header">
+        <div>
+          <span class="section-tag">LANDSCAPE</span>
+          <div class="page-section-title">Campaign spend vs. traffic</div>
+        </div>
+        <p class="rollout-note">Use dropdown filters to limit the campaign landscape scatter plot to a spend/traffic subset of the catalogue.</p>
+      </div>
+
+      <div class="catalogue-filter-row">
+        <div class="filter-box">
+          <span class="filter-caption">Channel scope</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('landscapeChannel')">
+            <span class="trigger-text">
+              <span class="trigger-main">{{ landscapeChannelFilter }}</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'landscapeChannel'">
+            <div class="dropdown-list">
+              <label class="dropdown-option">
+                <input
+                  type="radio"
+                  name="landscapeChannel"
+                  [checked]="landscapeChannelFilter === 'All channels'"
+                  (change)="landscapeChannelFilter = 'All channels'; openDropdown = null"
+                />
+                <span>All channels</span>
+              </label>
+              <label class="dropdown-option" *ngFor="let ch of channelOptions">
+                <input
+                  type="radio"
+                  name="landscapeChannel"
+                  [checked]="landscapeChannelFilter === ch"
+                  (change)="landscapeChannelFilter = ch; openDropdown = null"
+                />
+                <span>{{ ch }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-box">
+          <span class="filter-caption">Campaign volume</span>
+          <button type="button" class="dropdown-trigger" (click)="toggleDropdown('landscapeVolume')">
+            <span class="trigger-text">
+              <span class="trigger-main">{{ landscapeVolumeFilter }}</span>
+            </span>
+            <mat-icon class="trigger-chevron">expand_more</mat-icon>
+          </button>
+          <div class="dropdown-panel" *ngIf="openDropdown === 'landscapeVolume'">
+            <div class="dropdown-list">
+              <label class="dropdown-option" *ngFor="let v of ['Top 5', 'Top 12', 'All']">
+                <input
+                  type="radio"
+                  name="landscapeVolume"
+                  [checked]="landscapeVolumeFilter === v"
+                  (change)="landscapeVolumeFilter = $any(v); openDropdown = null"
+                />
+                <span>{{ v }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="catalogue-toolbar">
+        <span class="showing-count">Showing {{ landscapeCampaigns.length }} of {{ campaignsWithPerformance.length }} campaigns</span>
+        <div class="toolbar-actions">
+          <button type="button" class="apply-btn" (click)="applyLandscapeFilters()">Update View</button>
+        </div>
+      </div>
+
+      <highcharts-chart
+        *ngIf="landscapeCampaigns.length; else noLandscapeData"
+        [Highcharts]="Highcharts"
+        [options]="landscapeChartOptions"
+        [oneToOne]="true"
+        style="display: block; width: 100%; height: 420px"
+      ></highcharts-chart>
+      <ng-template #noLandscapeData>
+        <div class="catalogue-empty">No campaigns match the current filters.</div>
+      </ng-template>
+      <p class="info-note">Each bubble is one campaign - spend on the X axis, traffic on the Y axis. Hover a bubble for its uplift.</p>
+    </div>
+
+    <div class="xros-card section-card">
+      <div class="rollout-header">
+        <div>
+          <span class="section-tag">RANKING</span>
+          <div class="page-section-title">Campaign leaderboard</div>
+        </div>
+
+        <div class="catalogue-filter-row leaderboard-sort-row">
+          <div class="filter-box leaderboard-sort-box">
+            <span class="filter-caption">Sort by</span>
+            <button type="button" class="dropdown-trigger" (click)="toggleDropdown('leaderboardSort')">
+              <span class="trigger-text">
+                <span class="trigger-main">{{ leaderboardSort }}</span>
+              </span>
+              <mat-icon class="trigger-chevron">expand_more</mat-icon>
+            </button>
+            <div class="dropdown-panel" *ngIf="openDropdown === 'leaderboardSort'">
+              <div class="dropdown-list">
+                <label class="dropdown-option" *ngFor="let s of leaderboardSortOptions">
+                  <input type="radio" name="leaderboardSort" [checked]="leaderboardSort === s" (change)="setLeaderboardSort(s)" />
+                  <span>{{ s }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="leaderboard-list">
+        <div class="leaderboard-row" *ngFor="let c of leaderboardCampaigns">
+          <div class="leaderboard-main">
+            <div class="leaderboard-top">
+              <div>
+                <div class="leaderboard-name">{{ c.name }}</div>
+                <div class="leaderboard-sub">{{ c.channels.join(' + ') }} • {{ c.from }}</div>
+              </div>
+              <span class="leaderboard-uplift">{{ upliftOf(c) }}%</span>
+            </div>
+            <div class="audience-bar-track leaderboard-track">
+              <div class="audience-bar-fill leaderboard-fill" [style.width.%]="leaderboardBarPct(c)"></div>
+            </div>
+            <div class="leaderboard-stats">
+              <span>Traffic <b>{{ trafficOf(c) | number }}</b></span>
+              <span>Spend <b>{{ formatCurrency(spendOf(c)) }}</b></span>
+              <span>Cost / visitor <b>{{ formatCurrency(costPerVisitor(c)) }}</b></span>
+            </div>
+          </div>
+        </div>
+        <div class="catalogue-empty" *ngIf="!leaderboardCampaigns.length">No campaigns have performance data yet.</div>
+      </div>
+    </div>
+  </ng-container>
+</div>

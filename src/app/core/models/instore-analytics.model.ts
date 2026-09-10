@@ -28,6 +28,8 @@ export interface FloorPlanZoneData {
   attentionVisitors: number;
   avgResidenceTime: number;
   visitorTraffic: number;
+  male: number;
+  female: number;
   coordinates: { x: number; y: number }[];
 }
 
@@ -64,6 +66,8 @@ export interface ZoneRow {
   attentionVisitors: number;
   avgResidenceTime: number;
   visitorTraffic: number;
+  male: number;
+  female: number;
   sharePct: number;
 }
 

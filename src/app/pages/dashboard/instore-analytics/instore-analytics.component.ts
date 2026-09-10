@@ -697,14 +697,6 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
 
     this.kpiService.postKpiData(payload).subscribe({
       next: (res) => {
-        // TEMP DIAGNOSTIC - checking whether the real "Zone Analytics" widget
-        // response carries a per-zone gender split (male/female) that the
-        // KpiDataPoint model/toFloorPlan() below simply never mapped, before
-        // deciding whether the Metric Matrix table can show it. Remove once
-        // confirmed either way.
-        if (!environment.production) {
-          console.log('[InstoreAnalytics] raw zoneAnalytics point keys:', res.data.dataFilter[0]?.data?.[0]);
-        }
         const zones = this.toZoneRows(res.data.dataFilter);
         this.floorPlanForPanel = this.toFloorPlan(res.data.dataFilter);
         this.deriveZoneAnalysis(zones);
@@ -740,10 +732,10 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
 
   // Zone Data Visibility & Ranked Analysis is ranked from the same real
   // per-zone data the floor plan overlay already fetches (traffic, visitors,
-  // attentionVisitors, avgResidenceTime, visitorTraffic) - no separate
-  // endpoint. Only sharePct is derived (each zone's share of total traffic);
-  // everything else is the raw widget value. There's no capture-rate or
-  // audience-mix field on this widget, so those don't appear here.
+  // attentionVisitors, avgResidenceTime, visitorTraffic, male, female) - no
+  // separate endpoint. Only sharePct is derived (each zone's share of total
+  // traffic); everything else is the raw widget value. There's no capture-rate
+  // field on this widget, so that doesn't appear here.
   private deriveZoneAnalysis(zones: FloorPlanZoneData[]): void {
     if (!zones.length) {
       this.zonesForPanel = [];
@@ -760,6 +752,8 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
       attentionVisitors: z.attentionVisitors,
       avgResidenceTime: z.avgResidenceTime,
       visitorTraffic: z.visitorTraffic,
+      male: z.male,
+      female: z.female,
       sharePct: totalTraffic > 0 ? Math.round((z.traffic / totalTraffic) * 1000) / 10 : 0
     }));
 
@@ -845,6 +839,8 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         attentionVisitors: p.attentionVisitors ?? 0,
         avgResidenceTime: p.avgResidenceTime ?? 0,
         visitorTraffic: p.visitorTraffic ?? 0,
+        male: p.male ?? 0,
+        female: p.female ?? 0,
         coordinates: p.coordinates as { x: number; y: number }[]
       }));
 
@@ -866,6 +862,8 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         attentionVisitors: p.attentionVisitors ?? 0,
         avgResidenceTime: p.avgResidenceTime ?? 0,
         visitorTraffic: p.visitorTraffic ?? 0,
+        male: p.male ?? 0,
+        female: p.female ?? 0,
         coordinates: p.coordinates ?? []
       }));
   }

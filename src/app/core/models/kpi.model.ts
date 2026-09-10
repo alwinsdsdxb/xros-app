@@ -18,6 +18,8 @@ export interface KpiDataPoint {
   attentionVisitors?: number;
   avgResidenceTime?: number;
   visitorTraffic?: number;
+  male?: number;
+  female?: number;
   coordinates?: { x: number; y: number }[];
 }
 

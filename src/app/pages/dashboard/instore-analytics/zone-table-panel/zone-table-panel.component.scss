@@ -95,11 +95,11 @@
 .zone-table-header,
 .zone-table-row {
   display: grid;
-  grid-template-columns: 1.6fr 0.9fr 0.9fr 0.9fr 0.8fr 0.8fr;
+  grid-template-columns: 1.6fr 0.9fr 0.9fr 0.9fr 0.7fr 0.7fr 0.8fr 0.8fr;
   gap: 8px;
   align-items: center;
   padding: 10px 4px;
-  min-width: 640px;
+  min-width: 820px;
 }
 
 .zone-table-header {

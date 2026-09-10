@@ -46,9 +46,11 @@
   <div class="zone-table" *ngIf="filteredZones.length; else emptyState">
     <div class="zone-table-header">
       <span>Zone</span>
-      <span>Traffic</span>
-      <span>Visitors</span>
-      <span>Attention</span>
+      <span>Total Footfall</span>
+      <span>Unique Footfall</span>
+      <span>Attention Visitors</span>
+      <span>Male</span>
+      <span>Female</span>
       <span>Avg Dwell</span>
       <span>Share</span>
     </div>
@@ -60,6 +62,8 @@
       <span>{{ z.traffic | number }}</span>
       <span>{{ z.visitors | number }}</span>
       <span>{{ z.attentionVisitors | number }}</span>
+      <span>{{ z.male | number }}</span>
+      <span>{{ z.female | number }}</span>
       <span>{{ formatDuration(z.avgResidenceTime) }}</span>
       <span class="share-cell">
         <span class="row-dot" [style.background]="colorForZone(z.key)"></span>

@@ -31,9 +31,9 @@ export class ZoneTablePanelComponent implements OnChanges {
   Highcharts: typeof Highcharts = Highcharts;
 
   readonly metricOptions: MetricOption[] = [
-    { key: 'traffic', label: 'Traffic' },
-    { key: 'visitors', label: 'Visitors' },
-    { key: 'attentionVisitors', label: 'Attention' },
+    { key: 'traffic', label: 'Total Footfall' },
+    { key: 'visitors', label: 'Unique Footfall' },
+    { key: 'attentionVisitors', label: 'Attention Visitors' },
     { key: 'avgResidenceTime', label: 'Avg Dwell' },
     { key: 'sharePct', label: 'Share' }
   ];

@@ -25,7 +25,10 @@ const routes: Routes = [
       },
       {
         path: 'marketing-intelligence',
-        loadComponent: () => import('../../pages/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+        loadComponent: () =>
+          import('../../pages/marketing-intelligence/marketing-intelligence.component').then(
+            (m) => m.MarketingIntelligenceComponent
+          ),
         data: { title: 'XR Marketing Intelligence™' }
       },
       {
