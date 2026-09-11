@@ -59,26 +59,37 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <div class="demo-block" *ngIf="d.adultChild as ac">
-        <div class="demo-block-title">Adults / Children</div>
-        <div class="age-stats">
-          <div class="age-stat">
-            <span class="dot" style="background: #2f6fa7"></span>
-            <div>
-              <div class="age-stat-label">Adults</div>
-              <div class="age-stat-value">{{ ac.adult | number }} <span class="age-stat-pct">({{ ac.adultPct }}%)</span></div>
+        <ng-container *ngIf="d.adultChild as ac">
+          <div class="demo-subdivider"></div>
+          <div class="demo-block-title">Adults / Children</div>
+
+          <div class="heatbar">
+            <div class="heatbar-segment" [style.width.%]="ac.adultPct" style="background: #2f6fa7"></div>
+            <div class="heatbar-segment" [style.width.%]="ac.childPct" style="background: #e3a73c"></div>
+          </div>
+          <div class="heatbar-labels">
+            <span>Adults {{ ac.adultPct }}%</span>
+            <span>Children {{ ac.childPct }}%</span>
+          </div>
+
+          <div class="age-stats">
+            <div class="age-stat">
+              <span class="dot" style="background: #2f6fa7"></span>
+              <div>
+                <div class="age-stat-label">Adults</div>
+                <div class="age-stat-value">{{ ac.adult | number }} <span class="age-stat-pct">({{ ac.adultPct }}%)</span></div>
+              </div>
+            </div>
+            <div class="age-stat">
+              <span class="dot" style="background: #e3a73c"></span>
+              <div>
+                <div class="age-stat-label">Children</div>
+                <div class="age-stat-value">{{ ac.child | number }} <span class="age-stat-pct">({{ ac.childPct }}%)</span></div>
+              </div>
             </div>
           </div>
-          <div class="age-stat">
-            <span class="dot" style="background: #e3a73c"></span>
-            <div>
-              <div class="age-stat-label">Children</div>
-              <div class="age-stat-value">{{ ac.child | number }} <span class="age-stat-pct">({{ ac.childPct }}%)</span></div>
-            </div>
-          </div>
-        </div>
+        </ng-container>
       </div>
     </div>
   </div>

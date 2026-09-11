@@ -1,8 +1,8 @@
 <mat-card class="xros-card peak-hours-card" *ngIf="peakHours as p">
   <div class="panel-header">
     <div>
-      <span class="section-tag">PEAK HOURS</span>
-      <div class="page-section-title">Power Hour Footfall</div>
+      <span class="section-tag">{{ sectionTag }}</span>
+      <div class="page-section-title">{{ title }}</div>
     </div>
     <div class="intensity-legend">
       <span>INTENSITY</span>
@@ -14,17 +14,17 @@
 
   <div class="peak-stats-row">
     <div class="peak-stat">
-      <div class="stat-label">Best Slot</div>
+      <div class="stat-label">{{ bestSlotLabel }}</div>
       <div class="stat-value">{{ p.bestSlot.value }}</div>
       <div class="stat-sub">{{ p.bestSlot.sub }}</div>
     </div>
     <div class="peak-stat">
-      <div class="stat-label">Active Slots</div>
+      <div class="stat-label">{{ activeSlotsLabel }}</div>
       <div class="stat-value">{{ p.activeSlots.value }}</div>
       <div class="stat-sub">{{ p.activeSlots.sub }}</div>
     </div>
     <div class="peak-stat">
-      <div class="stat-label">Avg Active Slot</div>
+      <div class="stat-label">{{ avgActiveSlotLabel }}</div>
       <div class="stat-value">{{ p.avgActiveSlot.value }}</div>
       <div class="stat-sub">{{ p.avgActiveSlot.sub }}</div>
     </div>

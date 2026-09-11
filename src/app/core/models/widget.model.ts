@@ -35,6 +35,9 @@ export interface StoreListItem {
   parentId: string[];
   categoryId: string;
   categoryName: string;
+  // Vion's own site identifier ("plazaUnid" in their API) - the real
+  // /store/list response already returns this, just wasn't typed before.
+  externalId?: string;
 }
 
 export interface EventListItem {

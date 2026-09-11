@@ -764,8 +764,23 @@ export class DashboardComponent implements OnInit {
     }
 
     const d = typeof date === 'string' ? new Date(date) : date;
-    const rangeView = view === 'Day' || view === 'Yesterday' ? 'Month' : view;
-    const { from: rangeStart, to: rangeEnd } = this.getDateRange(rangeView, d);
+
+    // Day/Yesterday select one specific real day, not a range - it now gets
+    // its own genuine intraday (hour-of-day) line instead of silently
+    // widening to that day's containing month, which used to make the chart
+    // look unaffected by picking a different day within the same month.
+    if (view === 'Day' || view === 'Yesterday') {
+      this.fetchHourlyTrafficTrend(d, operationalHours, store);
+      return;
+    }
+
+    const today = this.stripTime(new Date());
+    const { from: rangeStart, to: rawRangeEnd } = this.getDateRange(view, d);
+    // Week/Month/Year ranges are computed from their fixed calendar bounds
+    // (e.g. the 1st-to-last day of the month) regardless of where "today"
+    // falls inside them - clamping the query/walk end to today keeps days
+    // that haven't happened yet from being queried and plotted as 0.
+    const rangeEnd = rawRangeEnd > today ? today : rawRangeEnd;
     const from = `${this.formatDate(rangeStart)} 00:00:00`;
     const to = `${this.formatDate(rangeEnd)} 23:59:59`;
     const storeIds = store !== 'all' ? [store] : undefined;
@@ -799,12 +814,66 @@ export class DashboardComponent implements OnInit {
         }
         this.applyPasserByTrendSum(byLabel);
         this.trafficSeriesForChart =
-          rangeView === 'Year'
+          view === 'Year'
             ? this.toYearlyTrendSeries(byLabel, rangeStart, rangeEnd)
             : this.toMonthlyTrendSeries(byLabel, rangeStart, rangeEnd);
       },
       error: () => (this.trafficSeriesForChart = [])
     });
+  }
+
+  // Same request shape as the day/month/year path above, just scoped to one
+  // calendar day and queried at hour resolution ("hour"/"day" is the same
+  // granularity pair this KPI API already supports elsewhere on this tenant -
+  // see the comment on buildMultiStoreKpiPayload). Future hours of *today*
+  // are clamped the same way future days are clamped above; a past day shows
+  // its full 24 hours.
+  private fetchHourlyTrafficTrend(day: Date, operationalHours: number, store: string): void {
+    const dayStr = this.formatDate(day);
+    const from = `${dayStr} 00:00:00`;
+    const to = `${dayStr} 23:59:59`;
+    const storeIds = store !== 'all' ? [store] : undefined;
+
+    const footfallPayload = buildMultiStoreKpiPayload(
+      this.trendReportWidget!,
+      this.footfallGroup!,
+      this.entranceStoreIds,
+      from,
+      to,
+      'hour',
+      'day',
+      operationalHours
+    );
+    const passerBy$ = this.passerByTrendWidget
+      ? this.kpiService.postKpiData(
+          buildKpiDataPayload(this.passerByTrendWidget, this.footfallGroup!, from, to, storeIds, 'hour', 'day', operationalHours)
+        )
+      : of(null);
+
+    forkJoin({
+      footfall: this.kpiService.postKpiData(footfallPayload),
+      passerBy: passerBy$
+    }).subscribe({
+      next: ({ footfall, passerBy }) => {
+        const byLabel = this.sumByHourOfDay(footfall.data.dataFilter.filter((f) => f.fetchDataFor === 'line'));
+        if (passerBy) {
+          for (const [label, series] of this.sumByHourOfDay(passerBy.data.dataFilter)) {
+            byLabel.set(label, series);
+          }
+        }
+        this.applyPasserByTrendSum(byLabel);
+        const isToday = dayStr === this.formatDate(new Date());
+        const maxHour = isToday ? new Date().getUTCHours() : 23;
+        this.trafficSeriesForChart = this.toHourlyTrendSeries(byLabel, maxHour);
+      },
+      error: () => (this.trafficSeriesForChart = [])
+    });
+  }
+
+  private stripTime(date: Date): Date {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
   }
 
   // Response has one line series per entrance store per KPI (e.g. "Lifestyle
@@ -825,6 +894,32 @@ export class DashboardComponent implements OnInit {
         if (key) {
           bucket.byDate.set(key, (bucket.byDate.get(key) ?? 0) + point.value);
         }
+      }
+    }
+
+    return byLabel;
+  }
+
+  // Same per-entrance summing as sumByCalendarDay, keyed by hour-of-day
+  // ("00".."23") instead of calendar date - used for the single-Day/Yesterday
+  // intraday line. getUTCHours() matches the same hour-extraction convention
+  // already used for `dateFrom` elsewhere in this app (Power Hour Footfall's
+  // toPeakHours(), Comparison's peak-hour stat).
+  private sumByHourOfDay(filters: KpiDataFilterResult[]): Map<string, { color: string; byDate: Map<string, number> }> {
+    const byLabel = new Map<string, { color: string; byDate: Map<string, number> }>();
+
+    for (const filter of filters) {
+      const label = filter.label.split('::').pop() || filter.label;
+      if (!byLabel.has(label)) {
+        byLabel.set(label, { color: filter.color ?? '#2a78d6', byDate: new Map() });
+      }
+      const bucket = byLabel.get(label)!;
+      for (const point of filter.data) {
+        if (!point.dateFrom) {
+          continue;
+        }
+        const key = new Date(point.dateFrom).getUTCHours().toString().padStart(2, '0');
+        bucket.byDate.set(key, (bucket.byDate.get(key) ?? 0) + point.value);
       }
     }
 
@@ -892,6 +987,21 @@ export class DashboardComponent implements OnInit {
           sum += byDate.get(this.formatDate(d)) ?? 0;
         }
         points.push({ time: monthStart.toLocaleDateString('en-GB', { month: 'short' }), value: sum });
+      }
+      return { label, color: TREND_SERIES_COLORS[label] ?? color, points };
+    });
+  }
+
+  // One point per hour (00:00-23:00) for the single selected Day/Yesterday,
+  // capped at maxHour so a day still in progress doesn't plot the rest of its
+  // hours as a misleading flat 0 line (see fetchHourlyTrafficTrend).
+  private toHourlyTrendSeries(byLabel: Map<string, { color: string; byDate: Map<string, number> }>, maxHour: number): TrafficTrendSeries[] {
+    return TREND_SERIES_ORDER.filter((label) => byLabel.has(label)).map((label) => {
+      const { color, byDate } = byLabel.get(label)!;
+      const points: { time: string; value: number }[] = [];
+      for (let hour = 0; hour <= maxHour; hour++) {
+        const key = hour.toString().padStart(2, '0');
+        points.push({ time: `${key}:00`, value: byDate.get(key) ?? 0 });
       }
       return { label, color: TREND_SERIES_COLORS[label] ?? color, points };
     });

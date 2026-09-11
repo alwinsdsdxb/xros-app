@@ -6,10 +6,21 @@ import * as Highcharts from 'highcharts';
 import { AuthService } from '../../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload } from '../../../core/services/kpi.service';
 import { WidgetService } from '../../../core/services/widget.service';
+import { QueueHourlyService } from '../../../core/services/queue-hourly.service';
 import { FilterStateService, SharedFilterState } from '../../../core/services/filter-state.service';
 import { DashboardGroup, DashboardSummary, StoreListItem, Widget } from '../../../core/models/widget.model';
 import { KpiDataFilterResult } from '../../../core/models/kpi.model';
+import { HourlyQueueRow, VionPlaza } from '../../../core/models/queue-hourly.model';
+import { PeakHours } from '../../../core/models/instore-analytics.model';
 import { environment } from '../../../../environments/environment';
+
+// Per-browser fallback map (storeId -> Vion plazaUnid), used when the
+// backend's own Store.externalId was never populated for this tenant - there
+// is no way to write it back from app_v2 (XpandP2 is reference-only here),
+// so this is kept client-side instead. Small (a handful of entries), unlike
+// the ~10k-row plaza list itself, which is never persisted, only cached
+// in-memory for the session (see QueueHourlyService.getPlazaList).
+const PLAZA_OVERRIDE_STORAGE_KEY = 'xros-queue-plaza-overrides';
 
 // Confirmed live (real request/response, see conversation) - a "Table"
 // widget bundling 4 KPI line series: Total Queue Visitors, Average Queue
@@ -51,8 +62,19 @@ const QUEUE_CHART_COLORS = {
 
 const DEFAULT_RANGE_DAYS = 12;
 
-const CALENDAR_WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const CALENDAR_WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const CALENDAR_INTENSITY_BUCKETS = 5;
+
+// Hour-of-day axis for the Queue Power Hour heatmap (see
+// buildHourlyPeakHours) - same 24-slot shape Instore Analytics' own Peak
+// Hours grid uses.
+const HOUR_LABELS = Array.from({ length: 24 }, (_, h) => `${h.toString().padStart(2, '0')}:00`);
+
+// Caps how many individual per-day Vion /queue/hour calls a Month/Year
+// selection can trigger - each day in the top filter's range is its own
+// live request (see fetchHourlyQueue), so an unbounded range would fire
+// hundreds of them.
+const MAX_HOURLY_RANGE_DAYS = 31;
 
 export interface QueueDayRow {
   dateKey: string;
@@ -253,12 +275,170 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   private queueWidget: Widget | null = null;
   private queueGroup: DashboardGroup | null = null;
   private rangeDays = DEFAULT_RANGE_DAYS;
+  // Full store list (with externalId/plazaUnid) - resolveWidget() otherwise
+  // discards everything but _id/storeName once storeOptions is built, but
+  // the hourly Vion lookup below needs externalId too.
+  private allStores: StoreListItem[] = [];
+
+  // Same day×hour heatmap format as Instore Analytics' "Power Hour
+  // Footfall" (reuses that exact component - see the template), built from
+  // Vion's per-day /queue/hour calls across the top filter's own View/Date
+  // Range, one call per day in range (capped - see MAX_HOURLY_RANGE_DAYS)
+  // rather than its own independent date picker.
+  hourlyLoading = false;
+  hourlyError = '';
+  hourlyPeakHours: PeakHours | null = null;
+
+  // Client-side fallback for stores with no backend externalId - see the
+  // PLAZA_OVERRIDE_STORAGE_KEY comment above. Keeps plazaName alongside the
+  // id so an applied match can be shown back to the user for confirmation,
+  // not just silently applied.
+  private plazaOverrides: Record<string, { plazaUnid: string; plazaName: string }> = this.loadPlazaOverrides();
+  private allPlazas: VionPlaza[] = [];
+  private plazaListRequested = false;
+
+  private candidateStoreIds(): string[] {
+    const store = this.filterForm.value.store;
+    return store !== 'all' ? [store] : this.queueGroup?.stores ?? [];
+  }
+
+  private resolvePlazaUnid(storeId: string): string | undefined {
+    return this.plazaOverrides[storeId]?.plazaUnid ?? this.allStores.find((s) => s._id === storeId)?.externalId;
+  }
+
+  // Stores with neither an override nor a real externalId are silently
+  // skipped rather than erroring - see hourlyError for the "none at all"
+  // case, and tryAutoMapPlaza below for the name-match fix-up flow.
+  private get hourlyPlazaUnids(): string[] {
+    return this.candidateStoreIds()
+      .map((id) => this.resolvePlazaUnid(id))
+      .filter((id): id is string => !!id);
+  }
+
+  private loadPlazaOverrides(): Record<string, { plazaUnid: string; plazaName: string }> {
+    try {
+      const raw = localStorage.getItem(PLAZA_OVERRIDE_STORAGE_KEY);
+      if (!raw) {
+        return {};
+      }
+      const parsed: Record<string, unknown> = JSON.parse(raw);
+      const normalized: Record<string, { plazaUnid: string; plazaName: string }> = {};
+      for (const [storeId, value] of Object.entries(parsed)) {
+        // Back-compat with an earlier format that stored just the plazaUnid
+        // string (no name) - upgrade it in place rather than losing it.
+        if (typeof value === 'string') {
+          normalized[storeId] = { plazaUnid: value, plazaName: '(saved location)' };
+        } else if (value && typeof value === 'object' && 'plazaUnid' in value) {
+          normalized[storeId] = value as { plazaUnid: string; plazaName: string };
+        }
+      }
+      return normalized;
+    } catch {
+      return {};
+    }
+  }
+
+  private savePlazaOverrides(): void {
+    try {
+      localStorage.setItem(PLAZA_OVERRIDE_STORAGE_KEY, JSON.stringify(this.plazaOverrides));
+    } catch {
+      // Storage unavailable/full - the mapping still works for this session,
+      // it just won't be remembered next time. Not worth surfacing an error.
+    }
+  }
+
+  // No reliable id links a store to a Vion plaza (both externalId and
+  // Vion's own plazaExternalid are blank for this tenant), so this is a
+  // name-similarity guess - shared whole words between the store name and
+  // each plaza name, applied automatically only if it clears a fairly high
+  // bar. No manual search UI at all per feedback (picking through ~10k
+  // unrelated entries by hand was seen as more error-prone than helpful) -
+  // if nothing clears the bar, hourlyError is simply left as-is with no
+  // further UI, rather than asking the user to hunt for it themselves.
+  private tryAutoMapPlaza(): void {
+    const candidates = this.candidateStoreIds();
+    if (candidates.length !== 1) {
+      return;
+    }
+    const storeId = candidates[0];
+    if (this.resolvePlazaUnid(storeId)) {
+      return;
+    }
+
+    if (this.allPlazas.length) {
+      this.applyAutoMatch(storeId);
+      return;
+    }
+    if (this.plazaListRequested) {
+      return;
+    }
+    this.plazaListRequested = true;
+    this.queueHourlyService.getPlazaList().subscribe({
+      next: (plazas) => {
+        this.allPlazas = plazas;
+        this.applyAutoMatch(storeId);
+      },
+      error: () => {
+        this.plazaListRequested = false;
+      }
+    });
+  }
+
+  private applyAutoMatch(storeId: string): void {
+    const storeName = this.allStores.find((s) => s._id === storeId)?.storeName ?? '';
+    const match = this.bestPlazaMatch(storeName);
+    if (!match) {
+      return;
+    }
+    this.plazaOverrides = { ...this.plazaOverrides, [storeId]: { plazaUnid: match.plazaUnid, plazaName: match.plazaName } };
+    this.savePlazaOverrides();
+    this.fetchHourlyQueue();
+  }
+
+  private wordsOf(value: string): Set<string> {
+    return new Set(
+      value
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((w) => w.length > 1)
+    );
+  }
+
+  // 0.3 was tuned loose enough to survive spacing/punctuation differences
+  // ("Center Point_ Dubai Hills Mall" vs "Centerpoint - Dubai Hills Mall")
+  // but still requires several shared distinctive words, not just one
+  // generic one (e.g. "mall") in common.
+  private bestPlazaMatch(storeName: string): VionPlaza | null {
+    const targetWords = this.wordsOf(storeName);
+    if (!targetWords.size) {
+      return null;
+    }
+    let best: VionPlaza | null = null;
+    let bestScore = 0;
+    for (const p of this.allPlazas) {
+      const candidateWords = this.wordsOf(p.plazaName);
+      let shared = 0;
+      for (const w of targetWords) {
+        if (candidateWords.has(w)) {
+          shared++;
+        }
+      }
+      const union = new Set([...targetWords, ...candidateWords]).size;
+      const score = union ? shared / union : 0;
+      if (score > bestScore) {
+        bestScore = score;
+        best = p;
+      }
+    }
+    return bestScore >= 0.3 ? best : null;
+  }
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private widgetService: WidgetService,
     private kpiService: KpiService,
+    private queueHourlyService: QueueHourlyService,
     private filterStateService: FilterStateService
   ) {
     const shared = this.filterStateService.snapshot;
@@ -341,6 +521,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     const date = view === 'Yesterday' ? this.yesterday() : rawDate;
     this.calendarMonth = this.startOfMonth(new Date(date));
     this.fetchCalendarMonth();
+    this.fetchHourlyQueue();
   }
 
   prevCalendarMonth(): void {
@@ -400,6 +581,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
           this.queueWidget = match?.widgets.find((w) => w._id === QUEUE_WIDGET_ID) ?? null;
 
           const queueStoreIds = new Set(this.queueGroup?.stores ?? []);
+          this.allStores = stores;
           this.storeOptions = stores.filter((s: StoreListItem) => queueStoreIds.has(s._id)).map((s) => ({ value: s._id, label: s.storeName }));
 
           if (!this.queueWidget || !this.queueGroup) {
@@ -409,6 +591,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
           }
           this.fetch();
           this.fetchCalendarMonth();
+          this.fetchHourlyQueue();
         },
         error: () => {
           this.loading = false;
@@ -891,15 +1074,109 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       });
   }
 
-  // One cell per calendar day, padded to full Sun-Sat weeks before/after the
+  // Builds the same day×hour grid shape as Instore Analytics' Peak Hours
+  // (toPeakHours() there) - but from Vion's /queue/hour, which only answers
+  // one day at a time, so this fans out one call per day across the top
+  // filter's own View/Date Range (capped at MAX_HOURLY_RANGE_DAYS to keep a
+  // Month/Year selection from firing hundreds of live Vion requests) and
+  // sums each day's hours into its weekday's row.
+  private fetchHourlyQueue(): void {
+    const plazaUnids = this.hourlyPlazaUnids;
+    if (!plazaUnids.length) {
+      this.hourlyLoading = false;
+      this.hourlyPeakHours = null;
+      this.hourlyError = 'Hourly queue data isn’t available for the selected store(s) (no Vion mapping found).';
+      // Try a name-match against Vion's plaza list right away - if one
+      // clears the bar it's applied automatically and this re-fetches; if
+      // not, hourlyError above is all that's shown (see tryAutoMapPlaza).
+      this.tryAutoMapPlaza();
+      return;
+    }
+
+    const { date: rawDate, view } = this.filterForm.value;
+    const date = view === 'Yesterday' ? this.yesterday() : rawDate;
+    const { from, to } = this.getDateRange(view, this.stripTime(new Date(date)));
+    const effectiveTo = to > this.stripTime(new Date()) ? this.stripTime(new Date()) : to;
+    const rangeDays = this.diffDaysInclusive(from, effectiveTo);
+    const effectiveFrom = rangeDays > MAX_HOURLY_RANGE_DAYS ? this.addDays(effectiveTo, -(MAX_HOURLY_RANGE_DAYS - 1)) : from;
+
+    const dates: Date[] = [];
+    for (const d = new Date(effectiveFrom); d <= effectiveTo; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d));
+    }
+
+    this.hourlyLoading = true;
+    this.hourlyError = '';
+
+    forkJoin(
+      dates.map((d) => this.queueHourlyService.getHourlyQueue(plazaUnids, this.formatDate(d)).pipe(map((rows) => ({ date: d, rows }))))
+    ).subscribe({
+      next: (results) => {
+        this.hourlyLoading = false;
+        this.hourlyPeakHours = this.buildHourlyPeakHours(results);
+      },
+      error: () => {
+        this.hourlyLoading = false;
+        this.hourlyPeakHours = null;
+        this.hourlyError = 'Unable to load hourly queue data. Please check the API connection and try again.';
+      }
+    });
+  }
+
+  private buildHourlyPeakHours(results: { date: Date; rows: HourlyQueueRow[] }[]): PeakHours {
+    const grid: (number | null)[][] = CALENDAR_WEEKDAY_LABELS.map(() => HOUR_LABELS.map(() => null));
+
+    for (const { date, rows } of results) {
+      const dayIdx = (date.getDay() + 6) % 7;
+      if (grid[dayIdx].every((v) => v === null)) {
+        grid[dayIdx] = HOUR_LABELS.map(() => 0);
+      }
+      rows.forEach((r, hourIdx) => {
+        grid[dayIdx][hourIdx] = (grid[dayIdx][hourIdx] ?? 0) + r.queueCount;
+      });
+    }
+
+    const cells = grid
+      .flatMap((row, dayIdx) => row.map((value, hourIdx) => ({ value, dayIdx, hourIdx })))
+      .filter((c): c is { value: number; dayIdx: number; hourIdx: number } => c.value !== null);
+
+    if (!cells.length) {
+      return {
+        bestSlot: { value: '—', sub: 'No data' },
+        activeSlots: { value: 0, sub: 'of 0 slots' },
+        avgActiveSlot: { value: 0, sub: 'in queue / active hour' },
+        hours: HOUR_LABELS,
+        days: CALENDAR_WEEKDAY_LABELS,
+        grid
+      };
+    }
+
+    const best = cells.reduce((a, b) => (b.value > a.value ? b : a));
+    const active = cells.filter((c) => c.value > 0);
+    const avgActive = active.length ? Math.round(active.reduce((s, c) => s + c.value, 0) / active.length) : 0;
+
+    return {
+      bestSlot: {
+        value: HOUR_LABELS[best.hourIdx],
+        sub: `${CALENDAR_WEEKDAY_LABELS[best.dayIdx]} · ${best.value.toLocaleString('en-US')} in queue`
+      },
+      activeSlots: { value: active.length, sub: `of ${cells.length} slots` },
+      avgActiveSlot: { value: avgActive.toLocaleString('en-US'), sub: 'in queue / active hour' },
+      hours: HOUR_LABELS,
+      days: CALENDAR_WEEKDAY_LABELS,
+      grid
+    };
+  }
+
+  // One cell per calendar day, padded to full Mon-Sun weeks before/after the
   // month so the grid aligns like a real calendar. Padding cells from the
   // adjacent month are marked out-of-month and never carry a row, even if a
   // date happens to collide with one already loaded for the current month.
   private buildCalendarWeeks(monthStart: Date, monthEnd: Date, rows: QueueDayRow[]): void {
     this.calendarRows = rows;
     const rowByDate = new Map(rows.map((r) => [r.isoDate, r]));
-    const gridStart = this.addDays(monthStart, -monthStart.getDay());
-    const gridEnd = this.addDays(monthEnd, 6 - monthEnd.getDay());
+    const gridStart = this.addDays(monthStart, -((monthStart.getDay() + 6) % 7));
+    const gridEnd = this.addDays(monthEnd, 6 - ((monthEnd.getDay() + 6) % 7));
 
     const cells: QueueCalendarCell[] = [];
     for (const d = new Date(gridStart); d <= gridEnd; d.setDate(d.getDate() + 1)) {

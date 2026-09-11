@@ -27,7 +27,7 @@ const ENTRANCE_CATEGORY_NAME = 'Entrance';
 // fallback below if it ever stops matching again).
 const COMPARISON_GROUP_NAME = 'Comparison Report';
 const PERIODIC_ANALYSIS_WIDGET_TITLE = 'Periodic Analysis';
-const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 interface DailyPoint {
   date: Date;
@@ -787,14 +787,18 @@ export class ComparisonPanelComponent implements OnInit, OnChanges {
         if (!isoDay || !hourStr) {
           continue;
         }
-        dayIdx = isoDay % 7;
+        // isoDay is ISO weekday (1=Monday ... 7=Sunday) - subtracting 1 gives
+        // a Monday-first row index directly, matching WEEKDAY_LABELS' order.
+        dayIdx = isoDay - 1;
         hour = hourStr;
       } else {
         if (!point.dateFrom) {
           continue;
         }
         const d = new Date(point.dateFrom);
-        dayIdx = d.getUTCDay();
+        // getUTCDay() is Sunday-first (0=Sunday); remap to the same
+        // Monday-first row index as the operational-hours branch above.
+        dayIdx = (d.getUTCDay() + 6) % 7;
         hour = `${d.getUTCHours().toString().padStart(2, '0')}:00`;
       }
 

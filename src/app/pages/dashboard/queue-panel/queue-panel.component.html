@@ -145,6 +145,28 @@
       </ng-container>
     </mat-card>
 
+    <mat-card class="xros-card queue-calendar-card hourly-queue-card" *ngIf="hourlyLoading || hourlyError">
+      <div class="calendar-nav-row">
+        <span class="section-tag">POWER HOUR</span>
+        <div class="page-section-title hourly-title">Queue Power Hour</div>
+      </div>
+      <div class="loading-row" *ngIf="hourlyLoading">
+        <mat-progress-spinner mode="indeterminate" diameter="20"></mat-progress-spinner>
+        <span>Loading...</span>
+      </div>
+      <div class="error-row" *ngIf="hourlyError && !hourlyLoading">{{ hourlyError }}</div>
+    </mat-card>
+
+    <app-peak-hours-panel
+      *ngIf="!hourlyLoading && !hourlyError && hourlyPeakHours"
+      [peakHours]="hourlyPeakHours"
+      sectionTag="POWER HOUR"
+      title="Queue Power Hour"
+      bestSlotLabel="Busiest Hour"
+      activeSlotsLabel="Active Hours"
+      avgActiveSlotLabel="Avg per Active Hour"
+    ></app-peak-hours-panel>
+
     <div class="chart-grid">
       <mat-card class="xros-card chart-card">
         <div class="chart-title">Trend Over Time</div>

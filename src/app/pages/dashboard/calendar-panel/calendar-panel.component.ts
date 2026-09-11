@@ -60,7 +60,7 @@ export interface CalendarMetricOption {
   label: string;
 }
 
-const WEEKDAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTHS_OF_HISTORY = 12;
 const HOURLY_OPERATIONAL_START = 8;
 
@@ -766,7 +766,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
 
   // Weekend = Sat/Sun (Date.getDay() 0 and 6), weekday = Mon-Fri - same
   // convention instore-analytics.component.ts's own weekday/weekend KPI tiles
-  // already use, not this file's Sun-start grid column order. Averaged only
+  // already use, independent of this file's Mon-start grid column order. Averaged only
   // over in-month days that actually have a value, so a partial month doesn't
   // get dragged down by days with no data.
   private computeDayTypeAverages(cellsByDate: Map<string, CalendarDayCell>): { weekdayAvg: number | null; weekendAvg: number | null } {
@@ -801,7 +801,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   private buildWeeks(monthStart: Date, cellsByDate: Map<string, CalendarDayCell>): CalendarWeekRow[] {
     const monthEnd = this.endOfMonth(monthStart);
     let cursor = new Date(monthStart);
-    cursor.setDate(cursor.getDate() - cursor.getDay());
+    cursor.setDate(cursor.getDate() - ((cursor.getDay() + 6) % 7));
 
     const weeks: CalendarWeekRow[] = [];
     let weekIndex = 1;
@@ -856,7 +856,7 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
   // Campaigns are handed down from the dashboard's own Event-list fetch (the
   // same data app-active-campaigns-panel renders) - this just projects each
   // campaign's [from, to] onto whichever week row(s) it overlaps, clipped to
-  // that week's own Sun-Sat bounds so a campaign spanning weeks gets its own
+  // that week's own Mon-Sun bounds so a campaign spanning weeks gets its own
   // banner segment per row rather than one banner that's positioned wrong.
   private buildCampaignBanners(weekStart: Date, weekEnd: Date): CalendarCampaignBanner[] {
     const campaigns = this.campaigns ?? [];
@@ -873,8 +873,8 @@ export class CalendarPanelComponent implements OnInit, OnChanges {
       const clippedEnd = to > weekEnd ? weekEnd : to;
       banners.push({
         label: c.name,
-        startCol: clippedStart.getDay() + 2,
-        endCol: clippedEnd.getDay() + 3
+        startCol: ((clippedStart.getDay() + 6) % 7) + 2,
+        endCol: ((clippedEnd.getDay() + 6) % 7) + 3
       });
     }
 

@@ -21,12 +21,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
+      # Only validate that the application builds for pull requests.
+      # Production builds happen on the server.
       - name: Install dependencies
+        if: github.event_name == 'pull_request'
         run: npm ci
 
-      - name: Build Angular application
+      - name: Build check
+        if: github.event_name == 'pull_request'
         run: npm run build
 
       - name: Prepare SSH
@@ -42,17 +45,18 @@ jobs:
         run: |
           ssh -i ~/.ssh/deploy_key \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            "mkdir -p /var/www/xros-deploy"
-
-          scp -i ~/.ssh/deploy_key -r \
-            dist/app_v2/browser/. \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}:/var/www/xros-deploy/"
-
-          ssh -i ~/.ssh/deploy_key \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
             "set -e
+             cd /var/www/xros-app
+
+             git pull origin main
+
+             npm ci
+
+             npm run build
+
              BACKUP=/var/www/html_backup_\$(date +%Y%m%d_%H%M%S)
              cp -a /var/www/html \"\$BACKUP\"
+
              rm -rf /var/www/html/*
-             cp -a /var/www/xros-deploy/. /var/www/html/
-             rm -rf /var/www/xros-deploy/*"
+             cp -a dist/app_v2/browser/. /var/www/html/
+            "

@@ -12,6 +12,15 @@ import { PeakHours } from '../../../../core/models/instore-analytics.model';
 })
 export class PeakHoursPanelComponent implements OnChanges {
   @Input() peakHours: PeakHours | null = null;
+  // Overridable so other tabs (e.g. Queue Panel's hourly drill-down) can
+  // reuse this exact heatmap/stat-tile layout for a different metric without
+  // it reading as "Power Hour Footfall" - defaults preserve Instore
+  // Analytics' original wording.
+  @Input() sectionTag = 'PEAK HOURS';
+  @Input() title = 'Power Hour Footfall';
+  @Input() bestSlotLabel = 'Best Slot';
+  @Input() activeSlotsLabel = 'Active Slots';
+  @Input() avgActiveSlotLabel = 'Avg Active Slot';
 
   Highcharts: typeof Highcharts = Highcharts;
   chartOptions: Highcharts.Options = {};

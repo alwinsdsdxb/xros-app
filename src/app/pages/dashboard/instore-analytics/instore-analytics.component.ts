@@ -58,7 +58,7 @@ const FUNNEL_WIDGET_TITLE = 'Funnel';
 // Promotion Display" would wrongly match; unavoidable without a real
 // zone-category field.
 const TRIAL_ROOM_ZONE_KEYWORDS = ['trial', 'fitting', 'changing'];
-const WEEKDAY_LABELS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAY_LABELS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const FULL_DAY_HOURS = Array.from({ length: 24 }, (_, h) => `${h.toString().padStart(2, '0')}:00`);
 
 @Component({
@@ -501,14 +501,15 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
     this.trafficSignalsForPanel = { peakDays, normalDays, lowDays, busiestDay: busiestDay ?? '—' };
   }
 
-  // Index 0 = Sunday, matching WEEKDAY_LABELS/Date.getDay() and the grid's
-  // dayIdx convention used throughout toPeakHours()/computeBusiestDay().
+  // Index 0 = Monday, matching WEEKDAY_LABELS and the grid's dayIdx
+  // convention used throughout toPeakHours()/computeBusiestDay() (Date.getDay()
+  // is Sunday=0-based, so it's remapped here to a Monday-first index).
   private weekdayOccurrenceCounts(from: string, to: string): number[] {
     const counts = [0, 0, 0, 0, 0, 0, 0];
     const fromDay = new Date(from.split(' ')[0]);
     const toDay = new Date(to.split(' ')[0]);
     for (let d = new Date(fromDay); d.getTime() <= toDay.getTime(); d.setDate(d.getDate() + 1)) {
-      counts[d.getDay()]++;
+      counts[(d.getDay() + 6) % 7]++;
     }
     return counts;
   }
@@ -868,7 +869,7 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
       }));
   }
 
-  // One row per weekday (Sunday-Saturday), one column per hour. Every
+  // One row per weekday (Monday-Sunday), one column per hour. Every
   // occurrence of a given weekday+hour within the selected View's date range
   // (e.g. every Monday 10am) gets summed into the same cell - so each row
   // shows that weekday's typical hourly pattern across the range, not just
@@ -892,14 +893,18 @@ export class InstoreAnalyticsComponent implements OnInit, OnChanges {
         if (!isoDay || !hourStr) {
           continue;
         }
-        dayIdx = isoDay % 7;
+        // isoDay is ISO weekday (1=Monday ... 7=Sunday) - subtracting 1 gives
+        // a Monday-first row index directly, matching WEEKDAY_LABELS' order.
+        dayIdx = isoDay - 1;
         hour = hourStr;
       } else {
         if (!point.dateFrom) {
           continue;
         }
         const d = new Date(point.dateFrom);
-        dayIdx = d.getUTCDay();
+        // getUTCDay() is Sunday-first (0=Sunday); remap to the same
+        // Monday-first row index as the operational-hours branch above.
+        dayIdx = (d.getUTCDay() + 6) % 7;
         hour = `${d.getUTCHours().toString().padStart(2, '0')}:00`;
       }
 

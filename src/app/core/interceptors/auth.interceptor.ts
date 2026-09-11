@@ -3,13 +3,21 @@ import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
   const router = inject(Router);
   const token = authService.getToken();
 
-  if (token) {
+  // Only the real backend gets this app's own bearer token. Without this
+  // check, setHeaders below overwrites ANY Authorization header already on
+  // the request - including the Vion token queue-hourly.service.ts sets for
+  // its direct browser calls to a third-party host - with this app's own
+  // login JWT instead.
+  const isOwnApi = req.url.startsWith(environment.apiUrl);
+
+  if (token && isOwnApi) {
     req = req.clone({
       setHeaders: { Authorization: `Bearer ${token}` }
     });
