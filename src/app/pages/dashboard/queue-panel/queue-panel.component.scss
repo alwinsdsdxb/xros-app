@@ -400,6 +400,22 @@
   margin: 0 12px 0 8px;
 }
 
+.hourly-source-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  color: var(--ink-secondary);
+}
+
+.source-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--ink-muted);
+}
+
 .calendar-month-label {
   flex: 1 1 auto;
   text-align: center;

@@ -302,6 +302,19 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     return store !== 'all' ? [store] : this.queueGroup?.stores ?? [];
   }
 
+  // Shown at the top of the Power Hour section so it's clear which of our
+  // own store names is being fed into the Vion name-match (see
+  // bestPlazaMatch) - shown regardless of whether a match was actually
+  // found, unlike the old "Auto-matched to X" banner which only appeared on
+  // success and named the Vion side, not ours.
+  get hourlyStoreLabel(): string | null {
+    const candidates = this.candidateStoreIds();
+    if (candidates.length !== 1) {
+      return null;
+    }
+    return this.allStores.find((s) => s._id === candidates[0])?.storeName ?? null;
+  }
+
   private resolvePlazaUnid(storeId: string): string | undefined {
     return this.plazaOverrides[storeId]?.plazaUnid ?? this.allStores.find((s) => s._id === storeId)?.externalId;
   }

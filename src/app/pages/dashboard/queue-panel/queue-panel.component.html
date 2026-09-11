@@ -145,6 +145,11 @@
       </ng-container>
     </mat-card>
 
+    <div class="hourly-source-row" *ngIf="hourlyStoreLabel as name">
+      <mat-icon class="source-icon">storefront</mat-icon>
+      <span>Matching queue data for <strong>{{ name }}</strong></span>
+    </div>
+
     <mat-card class="xros-card queue-calendar-card hourly-queue-card" *ngIf="hourlyLoading || hourlyError">
       <div class="calendar-nav-row">
         <span class="section-tag">POWER HOUR</span>
