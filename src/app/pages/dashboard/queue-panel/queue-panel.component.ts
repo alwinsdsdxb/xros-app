@@ -14,14 +14,6 @@ import { HourlyQueueRow, VionPlaza } from '../../../core/models/queue-hourly.mod
 import { PeakHours } from '../../../core/models/instore-analytics.model';
 import { environment } from '../../../../environments/environment';
 
-// Per-browser fallback map (storeId -> Vion plazaUnid), used when the
-// backend's own Store.externalId was never populated for this tenant - there
-// is no way to write it back from app_v2 (XpandP2 is reference-only here),
-// so this is kept client-side instead. Small (a handful of entries), unlike
-// the ~10k-row plaza list itself, which is never persisted, only cached
-// in-memory for the session (see QueueHourlyService.getPlazaList).
-const PLAZA_OVERRIDE_STORAGE_KEY = 'xros-queue-plaza-overrides';
-
 // Confirmed live (real request/response, see conversation) - a "Table"
 // widget bundling 4 KPI line series: Total Queue Visitors, Average Queue
 // Length, Average Wait Time, Average Service Time. It isn't in a group this
@@ -289,11 +281,12 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   hourlyError = '';
   hourlyPeakHours: PeakHours | null = null;
 
-  // Client-side fallback for stores with no backend externalId - see the
-  // PLAZA_OVERRIDE_STORAGE_KEY comment above. Keeps plazaName alongside the
-  // id so an applied match can be shown back to the user for confirmation,
-  // not just silently applied.
-  private plazaOverrides: Record<string, { plazaUnid: string; plazaName: string }> = this.loadPlazaOverrides();
+  // No reliable id links a store to a Vion plaza (both externalId and
+  // Vion's own plazaExternalid are blank for this tenant), so the match is
+  // recomputed live from the store name + Vion's plaza list every time
+  // (bestPlazaMatch) - nothing is written to localStorage, only the plaza
+  // list itself is cached in memory for the session (see
+  // QueueHourlyService.getPlazaList).
   private allPlazas: VionPlaza[] = [];
   private plazaListRequested = false;
 
@@ -304,9 +297,7 @@ export class QueuePanelComponent implements OnInit, OnChanges {
 
   // Shown at the top of the Power Hour section so it's clear which of our
   // own store names is being fed into the Vion name-match (see
-  // bestPlazaMatch) - shown regardless of whether a match was actually
-  // found, unlike the old "Auto-matched to X" banner which only appeared on
-  // success and named the Vion side, not ours.
+  // bestPlazaMatch) - the exact same name shown in the Store filter dropdown.
   get hourlyStoreLabel(): string | null {
     const candidates = this.candidateStoreIds();
     if (candidates.length !== 1) {
@@ -316,80 +307,34 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   }
 
   private resolvePlazaUnid(storeId: string): string | undefined {
-    return this.plazaOverrides[storeId]?.plazaUnid ?? this.allStores.find((s) => s._id === storeId)?.externalId;
+    const storeName = this.allStores.find((s) => s._id === storeId)?.storeName;
+    return storeName ? this.bestPlazaMatch(storeName)?.plazaUnid : undefined;
   }
 
-  // Stores with neither an override nor a real externalId are silently
-  // skipped rather than erroring - see hourlyError for the "none at all"
-  // case, and tryAutoMapPlaza below for the name-match fix-up flow.
+  // Stores with no matching plaza are silently skipped rather than erroring -
+  // see hourlyError for the "none at all" case, and ensurePlazaListThenRetry
+  // below for the name-match fix-up flow.
   private get hourlyPlazaUnids(): string[] {
     return this.candidateStoreIds()
       .map((id) => this.resolvePlazaUnid(id))
       .filter((id): id is string => !!id);
   }
 
-  private loadPlazaOverrides(): Record<string, { plazaUnid: string; plazaName: string }> {
-    try {
-      const raw = localStorage.getItem(PLAZA_OVERRIDE_STORAGE_KEY);
-      if (!raw) {
-        return {};
-      }
-      const parsed: Record<string, unknown> = JSON.parse(raw);
-      const normalized: Record<string, { plazaUnid: string; plazaName: string }> = {};
-      for (const [storeId, value] of Object.entries(parsed)) {
-        // Back-compat with an earlier format that stored just the plazaUnid
-        // string (no name) - upgrade it in place rather than losing it.
-        if (typeof value === 'string') {
-          normalized[storeId] = { plazaUnid: value, plazaName: '(saved location)' };
-        } else if (value && typeof value === 'object' && 'plazaUnid' in value) {
-          normalized[storeId] = value as { plazaUnid: string; plazaName: string };
-        }
-      }
-      return normalized;
-    } catch {
-      return {};
-    }
-  }
-
-  private savePlazaOverrides(): void {
-    try {
-      localStorage.setItem(PLAZA_OVERRIDE_STORAGE_KEY, JSON.stringify(this.plazaOverrides));
-    } catch {
-      // Storage unavailable/full - the mapping still works for this session,
-      // it just won't be remembered next time. Not worth surfacing an error.
-    }
-  }
-
-  // No reliable id links a store to a Vion plaza (both externalId and
-  // Vion's own plazaExternalid are blank for this tenant), so this is a
-  // name-similarity guess - shared whole words between the store name and
-  // each plaza name, applied automatically only if it clears a fairly high
-  // bar. No manual search UI at all per feedback (picking through ~10k
-  // unrelated entries by hand was seen as more error-prone than helpful) -
-  // if nothing clears the bar, hourlyError is simply left as-is with no
-  // further UI, rather than asking the user to hunt for it themselves.
-  private tryAutoMapPlaza(): void {
-    const candidates = this.candidateStoreIds();
-    if (candidates.length !== 1) {
-      return;
-    }
-    const storeId = candidates[0];
-    if (this.resolvePlazaUnid(storeId)) {
-      return;
-    }
-
-    if (this.allPlazas.length) {
-      this.applyAutoMatch(storeId);
-      return;
-    }
-    if (this.plazaListRequested) {
+  // Vion's plaza list is only fetched once per session (cached in-memory in
+  // allPlazas) - once it's in, resolvePlazaUnid can match against it
+  // directly, so this just makes sure it's loaded and retries the fetch. No
+  // manual search UI at all per feedback (picking through ~10k unrelated
+  // entries by hand was seen as more error-prone than helpful) - if nothing
+  // matches, hourlyError is simply left as-is with no further UI.
+  private ensurePlazaListThenRetry(): void {
+    if (this.allPlazas.length || this.plazaListRequested) {
       return;
     }
     this.plazaListRequested = true;
     this.queueHourlyService.getPlazaList().subscribe({
       next: (plazas) => {
         this.allPlazas = plazas;
-        this.applyAutoMatch(storeId);
+        this.fetchHourlyQueue();
       },
       error: () => {
         this.plazaListRequested = false;
@@ -397,53 +342,25 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     });
   }
 
-  private applyAutoMatch(storeId: string): void {
-    const storeName = this.allStores.find((s) => s._id === storeId)?.storeName ?? '';
-    const match = this.bestPlazaMatch(storeName);
-    if (!match) {
-      return;
-    }
-    this.plazaOverrides = { ...this.plazaOverrides, [storeId]: { plazaUnid: match.plazaUnid, plazaName: match.plazaName } };
-    this.savePlazaOverrides();
-    this.fetchHourlyQueue();
+  private normalizeName(value: string): string {
+    return value.toLowerCase().replace(/[^a-z]/g, '');
   }
 
-  private wordsOf(value: string): Set<string> {
-    return new Set(
-      value
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .filter((w) => w.length > 1)
-    );
-  }
-
-  // 0.3 was tuned loose enough to survive spacing/punctuation differences
-  // ("Center Point_ Dubai Hills Mall" vs "Centerpoint - Dubai Hills Mall")
-  // but still requires several shared distinctive words, not just one
-  // generic one (e.g. "mall") in common.
+  // Stripping everything but letters and comparing for an EXACT match
+  // (e.g. "Center Point_ Dubai Hills Mall" and "Centerpoint - Dubai Hills
+  // Mall" both collapse to "centerpointdubaihillsmall") replaced an earlier
+  // word-overlap similarity score, which let a shorter, more generic name
+  // (e.g. "Subdued - Dubai Hills Mall", sharing only "dubai hills mall")
+  // outscore the real match purely by having fewer extra words - confirmed
+  // live, this picked the wrong plaza in production while the correct one
+  // scored lower. Exact-after-normalizing has no such false positive, at the
+  // cost of not matching names that differ by more than punctuation/spacing.
   private bestPlazaMatch(storeName: string): VionPlaza | null {
-    const targetWords = this.wordsOf(storeName);
-    if (!targetWords.size) {
+    const target = this.normalizeName(storeName);
+    if (!target) {
       return null;
     }
-    let best: VionPlaza | null = null;
-    let bestScore = 0;
-    for (const p of this.allPlazas) {
-      const candidateWords = this.wordsOf(p.plazaName);
-      let shared = 0;
-      for (const w of targetWords) {
-        if (candidateWords.has(w)) {
-          shared++;
-        }
-      }
-      const union = new Set([...targetWords, ...candidateWords]).size;
-      const score = union ? shared / union : 0;
-      if (score > bestScore) {
-        bestScore = score;
-        best = p;
-      }
-    }
-    return bestScore >= 0.3 ? best : null;
+    return this.allPlazas.find((p) => this.normalizeName(p.plazaName) === target) ?? null;
   }
 
   constructor(
@@ -1099,10 +1016,10 @@ export class QueuePanelComponent implements OnInit, OnChanges {
       this.hourlyLoading = false;
       this.hourlyPeakHours = null;
       this.hourlyError = 'Hourly queue data isn’t available for the selected store(s) (no Vion mapping found).';
-      // Try a name-match against Vion's plaza list right away - if one
-      // clears the bar it's applied automatically and this re-fetches; if
-      // not, hourlyError above is all that's shown (see tryAutoMapPlaza).
-      this.tryAutoMapPlaza();
+      // Make sure Vion's plaza list is loaded, then retry - if an exact
+      // name match is found this re-fetches; if not, hourlyError above is
+      // all that's shown (see ensurePlazaListThenRetry).
+      this.ensurePlazaListThenRetry();
       return;
     }
 
