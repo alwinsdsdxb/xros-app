@@ -48,6 +48,8 @@ jobs:
             "set -e
              cd /var/www/xros-app
 
+             git restore src/environments/environment.ts src/environments/environment.prod.ts
+
              git pull origin main
 
              npm ci
