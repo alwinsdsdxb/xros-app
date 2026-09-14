@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { MatDatepicker } from '@angular/material/datepicker';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+import { Observable, catchError, finalize, forkJoin, map, of, shareReplay, switchMap } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { KpiService, buildKpiDataPayload, buildMultiStoreKpiPayload } from '../../core/services/kpi.service';
 import { WidgetService } from '../../core/services/widget.service';
@@ -184,6 +184,12 @@ export class DashboardComponent implements OnInit {
   currentDashboardId: string | null = null;
   readonly fixedDashboardId = environment.fixedDashboardId;
 
+  // shareReplay(1) so every caller (the dashboards list itself, the
+  // default-dashboard fallback in resolveDefaultDashboardId, and
+  // resolveWidgets on tab switches) shares one /dashboard/list request
+  // instead of each triggering its own.
+  private readonly dashboards$: Observable<DashboardSummary[]>;
+
   readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
 
   readonly hoursOptions = [
@@ -226,6 +232,7 @@ export class DashboardComponent implements OnInit {
       customRange: this.fb.group({ start: [shared.customRange.start], end: [shared.customRange.end] }),
       operationalHours: [shared.operationalHours]
     });
+    this.dashboards$ = this.widgetService.getDashboards().pipe(shareReplay(1));
   }
 
   // Fires on every publish to the shared filter state, including this tab's
@@ -271,7 +278,7 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.filterStateService.state$.subscribe((state) => this.onSharedFilterState(state));
 
-    this.widgetService.getDashboards().subscribe((dashboards) => (this.dashboards = dashboards));
+    this.dashboards$.subscribe((dashboards) => (this.dashboards = dashboards));
 
     this.route.paramMap.subscribe((params) => {
       const routedDashboardId = params.get('dashboardId');
@@ -300,7 +307,7 @@ export class DashboardComponent implements OnInit {
 
   private resolveDefaultDashboardId(): Observable<string | undefined> {
     const defaultDashboardId = this.fixedDashboardId || this.authService.currentUser?.defaultDashboard;
-    return defaultDashboardId ? of(defaultDashboardId) : this.widgetService.getDashboards().pipe(map((dashboards) => dashboards[0]?._id));
+    return defaultDashboardId ? of(defaultDashboardId) : this.dashboards$.pipe(map((dashboards) => dashboards[0]?._id));
   }
 
   // Maps the View toggle (Day/Week/Month/Year/Custom) to the calendar range

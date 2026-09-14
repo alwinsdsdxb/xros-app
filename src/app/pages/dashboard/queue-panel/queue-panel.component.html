@@ -14,7 +14,9 @@
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field store-field">
         <mat-select formControlName="store">
           <mat-option value="all">{{ allStoresLabel }}</mat-option>
-          <mat-option *ngFor="let s of storeOptions" [value]="s.value" [hidden]="storeOptions.length === 1">{{ s.label }}</mat-option>
+          <ng-container *ngIf="storeOptions.length !== 1">
+            <mat-option *ngFor="let s of storeOptions" [value]="s.value">{{ s.label }}</mat-option>
+          </ng-container>
         </mat-select>
       </mat-form-field>
     </div>
@@ -34,14 +36,14 @@
         }}</span>
         <mat-icon class="date-range-icon">calendar_today</mat-icon>
       </button>
-      <input class="date-range-input" matInput [matDatepicker]="picker" formControlName="date" />
+      <input class="date-range-input" matInput [matDatepicker]="picker" formControlName="date" [max]="maxDate" />
       <mat-datepicker #picker [startView]="usesMonthPicker ? 'year' : 'month'" (monthSelected)="onMonthSelected($event, picker)"></mat-datepicker>
     </div>
 
     <div class="filter-box" *ngIf="filterForm.value.view === 'Custom'" [formGroup]="customRangeGroup">
       <span class="filter-caption">Date Range</span>
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="filter-field date-range-field">
-        <mat-date-range-input [rangePicker]="rangePicker">
+        <mat-date-range-input [rangePicker]="rangePicker" [max]="maxDate">
           <input matStartDate formControlName="start" placeholder="Start" />
           <input matEndDate formControlName="end" placeholder="End" />
         </mat-date-range-input>

@@ -259,6 +259,9 @@ export class QueuePanelComponent implements OnInit, OnChanges {
   // Same View/Date Range/Hours filter shape as the Dashboard and Instore
   // Analytics tabs, so all three read as one consistent filter system.
   readonly views = ['Yesterday', 'Day', 'Week', 'Month', 'Year', 'Custom'];
+  // Queue data only ever exists up to today - blocks picking a future date
+  // in either the single-date or Custom range pickers (see the template).
+  readonly maxDate: Date = new Date();
   readonly hoursOptions = [
     { value: 1, label: 'Operational' },
     { value: 0, label: '24 Hours' }
@@ -553,17 +556,32 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     this.loading = true;
     this.errorMessage = '';
 
-    forkJoin({
-      current: this.kpiService.postKpiData(
-        buildKpiDataPayload(widget, group, currentRange.from, currentRange.to, storeIds, 'dayOfMonth', 'month', operationalHours)
-      ),
-      previous: this.kpiService
-        .postKpiData(buildKpiDataPayload(widget, group, previousRange.from, previousRange.to, storeIds, 'dayOfMonth', 'month', operationalHours))
-        .pipe(catchError(() => of(null)))
-    }).subscribe({
-      next: ({ current, previous }) => {
+    const previous$ = this.kpiService
+      .postKpiData(buildKpiDataPayload(widget, group, previousRange.from, previousRange.to, storeIds, 'dayOfMonth', 'month', operationalHours))
+      .pipe(catchError(() => of(null)));
+    const currentDaily$ = this.kpiService.postKpiData(
+      buildKpiDataPayload(widget, group, currentRange.from, currentRange.to, storeIds, 'dayOfMonth', 'month', operationalHours)
+    );
+
+    // A single selected date (Day/Yesterday, or a one-day Custom range) only
+    // ever gets one row back from the daily KPI call above (rowsFromFilters
+    // walks day-by-day over [from, to]), which reads as a single dot/flat
+    // line on charts meant to show a trend. Use Vion's hourly API instead so
+    // the charts show that day's actual hour-by-hour shape - same plaza
+    // resolution the Power Hour panel already uses (see hourlyPlazaUnids),
+    // so this only kicks in for stores with a resolvable Vion mapping;
+    // everything else (multi-day views, or no mapping/a failed request)
+    // falls back to the daily KPI point exactly as before.
+    const plazaUnids = this.rangeDays === 1 ? this.hourlyPlazaUnids : [];
+    const hourly$ = plazaUnids.length
+      ? this.queueHourlyService.getHourlyQueue(plazaUnids, this.formatDate(from)).pipe(catchError(() => of(null)))
+      : of(null);
+
+    forkJoin({ current: currentDaily$, previous: previous$, hourly: hourly$ }).subscribe({
+      next: ({ current, previous, hourly }) => {
         this.loading = false;
-        this.buildFromResponses(current.data.dataFilter, previous?.data.dataFilter ?? [], from, to, prevFrom, prevTo);
+        const rows = hourly ? this.hourlyRowsFromQueue(hourly, from) : this.rowsFromFilters(current.data.dataFilter, from, to);
+        this.applyRows(rows, previous?.data.dataFilter ?? [], prevFrom, prevTo);
       },
       error: () => {
         this.loading = false;
@@ -690,15 +708,36 @@ export class QueuePanelComponent implements OnInit, OnChanges {
     return rows;
   }
 
-  private buildFromResponses(
-    currentFilters: KpiDataFilterResult[],
-    previousFilters: KpiDataFilterResult[],
-    from: Date,
-    to: Date,
-    prevFrom: Date,
-    prevTo: Date
-  ): void {
-    const rows = this.rowsFromFilters(currentFilters, from, to);
+  // Mirrors rowsFromFilters' QueueDayRow shape, but for Vion's per-hour rows
+  // on a single selected day (see fetch()) - each hour becomes its own chart
+  // point instead of the one point a 1-day range gets from the daily KPI
+  // call, using the same metric formulas rowsFromFilters uses per day.
+  private hourlyRowsFromQueue(rows: HourlyQueueRow[], date: Date): QueueDayRow[] {
+    const isoDate = this.formatDate(date);
+    return rows.map((r) => {
+      const queueTimeSec = r.avgQueueSecond;
+      const serviceTimeSec = r.avgServiceSecond;
+      const processingTimeSec = queueTimeSec + serviceTimeSec;
+      const varianceSec = queueTimeSec - QUEUE_TARGET_SECONDS;
+
+      return {
+        dateKey: `${isoDate}-${r.hour}`,
+        dateLabel: r.hourLabel,
+        isoDate: `${isoDate} ${r.hourLabel}`,
+        queueLength: r.avgQueueLength,
+        queueCount: r.queueCount,
+        queueTimeSec,
+        serviceTimeSec,
+        processingTimeSec,
+        waitToServiceRatio: serviceTimeSec > 0 ? queueTimeSec / serviceTimeSec : 0,
+        waitingSharePct: processingTimeSec > 0 ? (queueTimeSec / processingTimeSec) * 100 : 0,
+        queueTargetVarianceSec: varianceSec,
+        queueTargetVariancePct: QUEUE_TARGET_SECONDS > 0 ? (varianceSec / QUEUE_TARGET_SECONDS) * 100 : 0
+      };
+    });
+  }
+
+  private applyRows(rows: QueueDayRow[], previousFilters: KpiDataFilterResult[], prevFrom: Date, prevTo: Date): void {
     this.dailyRows = rows;
 
     const prevQueueTimeByDate = this.metricByDate(previousFilters, QUEUE_TIME_LABEL);
